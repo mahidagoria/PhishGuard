@@ -41,7 +41,7 @@ $PY -c "
 import sys; sys.path.insert(0,'.')
 import src.predict as p; p._artifact = None
 from src.predict import predict_url
-urls = [('SAFE','https://www.google.com'),('SAFE','https://www.gecajmer.ac.in'),('HIGH','http://secure-login-8847.verify-account.tk/signin')]
+urls = [('SAFE','https://www.google.com'),('SAFE','https://docs.python.org/3/'),('HIGH','http://secure-login-8847.verify-account.tk/signin')]
 ok = all(
     (exp=='SAFE' and predict_url(u)['phishing_probability'] < 50) or
     (exp=='HIGH' and predict_url(u)['risk_level']=='HIGH')

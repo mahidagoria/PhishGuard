@@ -120,7 +120,7 @@ from src.predict import predict_url
 
 SMOKE = [
     ("SAFE", "https://www.google.com"),
-    ("SAFE", "https://www.gecajmer.ac.in"),
+    ("SAFE", "https://docs.python.org/3/"),
     ("SAFE", "https://github.com"),
     ("SAFE", "https://www.microsoft.com"),
     ("SAFE", "https://docs.python.org/3/"),

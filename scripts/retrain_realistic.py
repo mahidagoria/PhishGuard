@@ -13,7 +13,7 @@ LEGIT_BASES = [
     "https://www.microsoft.com/en-in","https://stackoverflow.com/questions/12345/python-flask",
     "https://www.amazon.in/dp/B0EXAMPLE","https://en.wikipedia.org/wiki/Phishing",
     "https://www.linkedin.com/in/johndoe","https://docs.python.org/3/library/urllib.parse.html",
-    "https://www.gecajmer.ac.in/department/cse","https://www.nic.in/",
+    "https://docs.python.org/3/library/","https://www.nic.in/",
     "https://www.irctc.co.in/nget/train-search","https://www.flipkart.com/mobile-phones",
     "https://www.youtube.com/watch?v=dQw4w9WgXcQ","https://www.reddit.com/r/cybersecurity",
     "https://www.kaggle.com/datasets/phishing-urls","https://www.cloudflare.com/learning/security/",

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import sys
-import timet
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,7 +36,7 @@ _demo_seeded = False
 
 DEMO_SEED_URLS = [
     "https://www.google.com",
-    "https://www.gecajmer.ac.in",
+    "https://docs.python.org/3/",
     "https://github.com/scikit-learn/scikit-learn",
     "http://secure-login-8847.verify-account.tk/signin?user=admin",
     "https://www-paypa1-9921.secure-update.ml/login",
@@ -165,7 +165,7 @@ def metrics():
     return jsonify({
         "total_scans": len(scan_logs),
         "phishing_detected": phishing,
-        "legitimate_detected": len(scan_logs) - phishing,
+        "legitimate_detected": sum(1 for l in scan_logs if l.get("label") == 0),
         "avg_latency_ms": round(sum(latencies) / len(latencies), 3) if latencies else 0,
         "min_latency_ms": round(min(latencies), 3) if latencies else 0,
         "max_latency_ms": round(max(latencies), 3) if latencies else 0,
@@ -207,7 +207,7 @@ def sample_urls():
         "legitimate": [
             "https://www.google.com",
             "https://github.com/scikit-learn/scikit-learn",
-            "https://www.gecajmer.ac.in",
+            "https://docs.python.org/3/",
             "https://www.microsoft.com/en-in",
             "https://docs.python.org/3/library/urllib.parse.html",
         ],

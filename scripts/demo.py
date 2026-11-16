@@ -17,7 +17,7 @@ BASE = os.environ.get("API_BASE", "http://127.0.0.1:5001")
 TEST_URLS = [
     ("https://www.google.com", "Legitimate"),
     ("https://github.com/scikit-learn/scikit-learn", "Legitimate"),
-    ("https://www.gecajmer.ac.in", "Legitimate"),
+    ("https://docs.python.org/3/", "Legitimate"),
     ("http://secure-login-8847.verify-account.tk/signin?user=admin", "Phishing"),
     ("https://www-paypa1-9921.secure-update.ml/login", "Phishing"),
     ("http://192.168.45.12/paypal/verify/update", "Phishing"),

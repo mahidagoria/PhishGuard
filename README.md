@@ -7,9 +7,11 @@
 
 ## Overview
 
-A lightweight, privacy-preserving phishing URL detection engine that classifies any URL as legitimate or phishing in under 10 milliseconds — entirely on-device with no external API calls.
+A lightweight phishing URL detection engine that classifies URL structure and checks whether the hostname resolves via the system DNS resolver. It does not request or open the submitted site.
 
-The system extracts 22 structural, lexical, and entropy signals from a URL and runs them through a trained Random Forest classifier, returning a risk score and classification with sub-10ms latency.
+The system extracts 22 structural, lexical, and entropy signals from a URL and runs them through a constrained Decision Tree classifier. Model inference is typically under 10 milliseconds; total response time also depends on the system DNS resolver.
+
+The dashboard displays measured test-set accuracy (83.18% for the currently saved model), not a hard-coded target. After duplicate and conflicting URLs are removed, the current training run uses 1,069 unique URLs. Low-risk URLs with resolvable hostnames are marked safe; unresolved low-risk domains are undefined, while strong phishing indicators are still flagged.
 
 ## Quick Start
 
@@ -86,15 +88,13 @@ curl -X POST http://127.0.0.1:5000/predict \
 
 ## Model Performance
 
-Trained on 2,000 balanced URLs (1,000 legitimate · 1,000 phishing) with hard edge-cases included.
+The source dataset contains 2,000 generated URLs with hard edge-cases. The training pipeline removes duplicates and conflicting labels before evaluation.
 
 | Classifier | Accuracy | Precision | Recall | F1 Score |
 |---|---|---|---|---|
-| Decision Tree | 94.75% | 93.82% | 95.50% | 94.65% |
-| Gradient Boosting | 96.50% | 95.91% | 97.00% | 96.45% |
-| **Random Forest** | **97.25%** | **96.80%** | **97.50%** | **97.15%** |
+| **Decision Tree (depth 2)** | **83.18%** | **97.74%** | **79.75%** | **87.84%** |
 
-**Deployed model:** Random Forest · False alarm rate: 2% · Detection rate: 96.5%
+Measured on the current stratified holdout split; results can vary with the dataset.
 
 ## Project Structure
 

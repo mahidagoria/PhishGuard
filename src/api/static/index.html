@@ -465,7 +465,7 @@ body {
       </div>
       <div class="kpi-value" id="kpiAccuracy">—</div>
       <div class="kpi-bar"><div id="kpiAccBar" class="kpi-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
-      <div class="kpi-label">Best classifier · test set</div>
+      <div class="kpi-label">Measured on the test set</div>
     </div>
 
     <div class="kpi-card">
@@ -567,7 +567,7 @@ body {
             <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px">Quick test samples:</div>
             <div style="display:flex;flex-wrap:wrap;gap:7px">
               <button class="pill-safe" onclick="quickScan('https://www.google.com')"><i class="fa-solid fa-check" style="font-size:10px"></i> google.com</button>
-              <button class="pill-safe" onclick="quickScan('https://www.gecajmer.ac.in')"><i class="fa-solid fa-check" style="font-size:10px"></i> gecajmer.ac.in</button>
+              <button class="pill-safe" onclick="quickScan('https://docs.python.org/3/')"><i class="fa-solid fa-check" style="font-size:10px"></i> docs.python.org</button>
               <button class="pill-danger" onclick="quickScan('http://secure-login-8847.verify-account.tk/signin?user=admin')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> verify-account.tk</button>
               <button class="pill-danger" onclick="quickScan('https://www-paypa1-9921.secure-update.ml/login')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> paypa1 spoof</button>
               <button class="pill-danger" onclick="quickScan('http://192.168.45.12/paypal/verify/update')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> IP-based URL</button>
@@ -978,54 +978,144 @@ async function loadModelMetadata() {
     if (d.error) return;
     _meta = d;
     document.getElementById('kpiDataset').textContent = d.dataset_size.toLocaleString();
-    const acc = d.benchmarks[d.model_name].accuracy;
-    document.getElementById('kpiAccuracy').textContent = acc+'%';
-    setTimeout(() => { document.getElementById('kpiAccBar').style.width = acc+'%'; }, 300);
+    const accuracy = d.benchmarks[d.model_name].accuracy;
+    document.getElementById('kpiAccuracy').textContent = accuracy+'%';
+    setTimeout(() => { document.getElementById('kpiAccBar').style.width = accuracy+'%'; }, 300);
   } catch { console.warn('Metadata unavailable'); }
 }
 
 /* ── Scanner ── */
 function quickScan(url) { document.getElementById('urlInput').value=url; scanURL(); switchTab('scan'); }
 
+
 async function scanURL() {
   const url = document.getElementById('urlInput').value.trim();
+
   if (!url) return;
+
   document.getElementById('scanEmpty').classList.add('hidden');
   document.getElementById('scanResult').classList.add('hidden');
   document.getElementById('scanLoading').classList.remove('hidden');
   document.getElementById('scanBtn').disabled = true;
+
   try {
-    const d = await fetch(API+'/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}).then(r=>r.json());
-    renderResult(d); sessionScans++; sessionLatencies.push(d.latency_ms);
-    updateKPIs(); refreshHistory(); updateTicker();
-    toast(d.label===1?'Phishing URL detected — HIGH RISK':'URL appears legitimate — SAFE', d.label===1?'danger':'success');
-  } catch(e) { toast('Analysis failed: '+e.message,'danger'); }
-  finally { document.getElementById('scanLoading').classList.add('hidden'); document.getElementById('scanBtn').disabled=false; }
+    const response = await fetch(API + '/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url })
+    });
+
+    const d = await response.json();
+
+    if (!response.ok) {
+      throw new Error(d.error || 'URL analysis failed');
+    }
+
+    renderResult(d);
+
+    sessionScans++;
+    sessionLatencies.push(d.latency_ms);
+
+    updateKPIs();
+    refreshHistory();
+    updateTicker();
+
+    if (d.verdict === 'PHISHING') {
+      toast('Phishing URL detected — HIGH RISK', 'danger');
+    } else if (d.verdict === 'SUSPICIOUS') {
+      toast('Suspicious URL — verify before opening', 'danger');
+    } else if (d.verdict === 'UNDEFINED') {
+      toast('Domain could not be resolved — result is undefined', 'danger');
+    } else if (d.verdict === 'SAFE') {
+      toast('No phishing indicators detected', 'success');
+    } else {
+      toast('Domain is UNVERIFIED — safety not confirmed', 'danger');
+    }
+
+  } catch (e) {
+    toast('Analysis failed: ' + e.message, 'danger');
+  } finally {
+    document.getElementById('scanLoading').classList.add('hidden');
+    document.getElementById('scanBtn').disabled = false;
+  }
 }
+
+
 
 function renderResult(d) {
   document.getElementById('scanResult').classList.remove('hidden');
   document.getElementById('scanResult').classList.add('fade-up');
-  const COLS = { HIGH:'#E5484D', MEDIUM:'#f97316', LOW:'#F59E0B', SAFE:'#00A896' };
-  const pct  = d.phishing_probability;
+
+  const COLS = {
+    HIGH: '#E5484D',
+    MEDIUM: '#f97316',
+    LOW: '#F59E0B',
+    SAFE: '#00A896'
+  };
+
+  const pct = d.phishing_probability;
   const fill = document.getElementById('gaugeFill');
-  fill.style.stroke = COLS[d.risk_level]||'#00A896';
-  setTimeout(() => { fill.style.strokeDashoffset = 270 - (pct/100)*270; }, 80);
-  document.getElementById('riskPct').textContent = pct+'%';
-  document.getElementById('riskLbl').textContent  = d.risk_level;
-  document.getElementById('riskLbl').style.color  = COLS[d.risk_level];
-  const BM = {HIGH:['badge-high','fa-triangle-exclamation','High Risk'],MEDIUM:['badge-medium','fa-circle-exclamation','Suspicious'],LOW:['badge-low','fa-circle-info','Low Risk'],SAFE:['badge-safe','fa-shield','Safe']};
-  const [cls,icon,lbl] = BM[d.risk_level]||BM.SAFE;
-  const b = document.getElementById('riskBadge');
-  b.className = 'badge '+cls; b.innerHTML = `<i class="fa-solid ${icon}" style="font-size:10px"></i> ${lbl}`;
-  document.getElementById('resultUrl').textContent  = d.url;
-  document.getElementById('resultConf').textContent = d.confidence+'%';
-  document.getElementById('resultLat').textContent  = d.latency_ms+' ms';
-  const rc = document.getElementById('resultClass');
-  rc.textContent = d.label===1?'⚠ Phishing Detected':'✓ Legitimate URL';
-  rc.style.color = d.label===1?'#f87171':'#34d399';
+
+  fill.style.stroke = COLS[d.risk_level] || '#F59E0B';
+
+  setTimeout(() => {
+    fill.style.strokeDashoffset = 270 - (pct / 100) * 270;
+  }, 80);
+
+  document.getElementById('riskPct').textContent = pct + '%';
+
+  document.getElementById('riskLbl').textContent =
+    d.verdict === 'UNVERIFIED' ? 'UNVERIFIED' : d.risk_level;
+
+  document.getElementById('riskLbl').style.color =
+    COLS[d.risk_level] || '#F59E0B';
+
+  const BM = {
+    HIGH: ['badge-high', 'fa-triangle-exclamation', 'High Risk'],
+    MEDIUM: ['badge-medium', 'fa-circle-exclamation', 'Suspicious'],
+    LOW: ['badge-low', 'fa-circle-info', 'Unverified'],
+    UNDEFINED: ['badge-low', 'fa-circle-question', 'Undefined — DNS lookup failed'],
+    SAFE: ['badge-safe', 'fa-shield', 'Safe']
+  };
+
+  const [cls, icon, lbl] = BM[d.risk_level] || BM.LOW;
+
+  const badge = document.getElementById('riskBadge');
+
+  badge.className = 'badge ' + cls;
+  badge.innerHTML =
+    `<i class="fa-solid ${icon}" style="font-size:10px"></i> ${lbl}`;
+
+  document.getElementById('resultUrl').textContent = d.url;
+
+  document.getElementById('resultConf').textContent =
+    d.confidence + '%';
+
+  document.getElementById('resultLat').textContent =
+    d.latency_ms + ' ms';
+
+  const resultClass = document.getElementById('resultClass');
+
+  if (d.verdict === 'PHISHING') {
+    resultClass.textContent = '⚠ Phishing Detected';
+    resultClass.style.color = '#f87171';
+  } else if (d.verdict === 'SUSPICIOUS') {
+    resultClass.textContent = '⚠ Suspicious URL';
+    resultClass.style.color = '#f97316';
+  } else if (d.verdict === 'SAFE') {
+    resultClass.textContent = '✓ No Phishing Indicators Detected';
+    resultClass.style.color = '#34d399';
+  } else if (d.verdict === 'UNDEFINED') {
+    resultClass.textContent = 'ⓘ Undefined Domain — DNS Lookup Failed';
+    resultClass.style.color = '#F59E0B';
+  } else {
+    resultClass.textContent = 'ⓘ Unverified Domain — Safety Not Confirmed';
+    resultClass.style.color = '#F59E0B';
+  }
+
   renderFeatureBreakdown(d.features);
 }
+
 
 function updateKPIs() {
   document.getElementById('kpiScanned').textContent = sessionScans;
@@ -1098,7 +1188,7 @@ function loadModelBenchmarks() {
   const metrics=['accuracy','precision','recall','cv_f1_mean'];
   const datasets=Object.keys(d.benchmarks).map(m=>({label:m,data:metrics.map(k=>d.benchmarks[m][k]),backgroundColor:PAL[m]||'rgba(23,105,224,.7)',borderRadius:5}));
   if (modelChart) modelChart.destroy();
-  modelChart=new Chart(document.getElementById('modelBenchChart').getContext('2d'),{type:'bar',data:{labels:['Accuracy','Precision','Recall','CV F1 (5-fold)'],datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}}},tooltip:{backgroundColor:dark?'#112240':'#fff',borderColor:'rgba(23,105,224,.3)',borderWidth:1,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}},scales:{y:{min:85,max:100,ticks:{color:tc,callback:v=>v+'%'},grid:{color:gc}},x:{ticks:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}},grid:{color:gc}}}}});
+  modelChart=new Chart(document.getElementById('modelBenchChart').getContext('2d'),{type:'bar',data:{labels:['Accuracy','Precision','Recall','CV F1 (5-fold)'],datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}}},tooltip:{backgroundColor:dark?'#112240':'#fff',borderColor:'rgba(23,105,224,.3)',borderWidth:1,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}},scales:{y:{min:0,max:100,ticks:{color:tc,callback:v=>v+'%'},grid:{color:gc}},x:{ticks:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}},grid:{color:gc}}}}});
   const best=d.benchmarks[d.model_name];
   document.getElementById('bestModelName').textContent=d.model_name;
   document.getElementById('bmAcc').textContent=best.accuracy+'%';
@@ -1113,7 +1203,7 @@ function loadModelBenchmarks() {
 }
 
 /* ── Batch ── */
-function loadBatchSamples(){document.getElementById('batchInput').value=['https://www.google.com','https://github.com/scikit-learn/scikit-learn','https://www.gecajmer.ac.in','https://www.microsoft.com/en-in','https://docs.python.org/3/library/urllib.parse.html','http://secure-login-8847.verify-account.tk/signin?user=admin','https://www-paypa1-9921.secure-update.ml/login','http://192.168.45.12/paypal/verify/update','https://netflix-billing-4421.account-suspend.work/update-payment','http://banking-hdfc-7731.update-now.cf/secure/login'].join('\n');}
+function loadBatchSamples(){document.getElementById('batchInput').value=['https://www.google.com','https://github.com/scikit-learn/scikit-learn','https://docs.python.org/3/','https://www.microsoft.com/en-in','https://docs.python.org/3/library/urllib.parse.html','http://secure-login-8847.verify-account.tk/signin?user=admin','https://www-paypa1-9921.secure-update.ml/login','http://192.168.45.12/paypal/verify/update','https://netflix-billing-4421.account-suspend.work/update-payment','http://banking-hdfc-7731.update-now.cf/secure/login'].join('\n');}
 async function runBatchScan(){
   const urls=document.getElementById('batchInput').value.trim().split('\n').map(s=>s.trim()).filter(Boolean).slice(0,50);
   if(!urls.length)return;
@@ -1122,15 +1212,82 @@ async function runBatchScan(){
   try{const d=await fetch(API+'/predict/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls})}).then(r=>r.json());renderBatch(d);sessionScans+=d.count;updateKPIs();refreshHistory();}
   catch(e){box.innerHTML=`<div style="padding:16px;font-size:12px;color:var(--red)">Error: ${e.message}</div>`;}
 }
-function renderBatch(d){
-  const box=document.getElementById('batchResults');
+
+function renderBatch(d) {
+  const box = document.getElementById('batchResults');
+
   document.getElementById('batchStats').classList.remove('hidden');
-  document.getElementById('batchCount').textContent=d.count+' URLs';
-  document.getElementById('batchAvgLat').textContent='Avg '+d.avg_latency_ms+' ms';
-  const RC={HIGH:'badge-high',MEDIUM:'badge-medium',LOW:'badge-low',SAFE:'badge-safe'};
-  const rows=d.results.map((r,i)=>{if(r.error)return`<tr><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${i+1}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;color:var(--text-muted)">${r.url}</td><td colspan="3" style="padding:10px 12px;font-size:12px;color:var(--red)">Error</td></tr>`;const col=r.label?'#f87171':'#34d399';return`<tr style="border-top:1px solid var(--border-subtle)"><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${i+1}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;color:${col}">${r.url}</td><td style="padding:10px 12px"><span class="badge ${RC[r.risk_level]||'badge-safe'}">${r.risk_level}</span></td><td class="mono" style="padding:10px 12px;font-size:12px;font-weight:700;color:${col}">${r.phishing_probability}%</td><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${r.latency_ms}ms</td></tr>`;}).join('');
-  box.innerHTML=`<table style="width:100%;text-align:left"><thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)"><th style="padding:8px 12px">#</th><th style="padding:8px 12px">URL</th><th style="padding:8px 12px">Risk</th><th style="padding:8px 12px">Score</th><th style="padding:8px 12px">Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
+  document.getElementById('batchCount').textContent = d.count + ' URLs';
+  document.getElementById('batchAvgLat').textContent =
+    'Avg ' + d.avg_latency_ms + ' ms';
+
+  const RC = {
+    HIGH: 'badge-high',
+    MEDIUM: 'badge-medium',
+    LOW: 'badge-low',
+    UNDEFINED: 'badge-low',
+    SAFE: 'badge-safe'
+  };
+
+  const rows = d.results.map((r, i) => {
+    if (r.error) {
+      return `<tr>
+        <td>${i + 1}</td>
+        <td>${r.url}</td>
+        <td colspan="3">Error</td>
+      </tr>`;
+    }
+
+    const isPhishing = r.verdict === 'PHISHING';
+    const isSuspicious = r.verdict === 'SUSPICIOUS';
+
+    const col = isPhishing
+      ? '#f87171'
+      : isSuspicious
+        ? '#f97316'
+        : '#F59E0B';
+
+    const riskName = r.verdict || 'UNVERIFIED';
+
+    return `
+      <tr style="border-top:1px solid var(--border-subtle)">
+        <td style="padding:10px 12px">${i + 1}</td>
+
+        <td style="padding:10px 12px;word-break:break-all;color:${col}">
+          ${r.url}
+        </td>
+
+        <td style="padding:10px 12px">
+          <span class="badge ${RC[r.risk_level] || 'badge-low'}">
+            ${riskName}
+          </span>
+        </td>
+
+        <td style="padding:10px 12px;color:${col}">
+          ${r.phishing_probability}%
+        </td>
+
+        <td style="padding:10px 12px">
+          ${r.latency_ms}ms
+        </td>
+      </tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <table style="width:100%;text-align:left">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>URL</th>
+          <th>Verdict</th>
+          <th>Score</th>
+          <th>Latency</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
+
 
 /* ── Dataset ── */
 async function loadDatasetExplorer(){
@@ -1161,24 +1318,93 @@ async function loadDatasetPreview(filter){
 }
 
 /* ── History ── */
-async function refreshHistory(){
-  try{const d=await fetch(API+'/logs?limit=50').then(r=>r.json());
-    const box=document.getElementById('historyTable');
-    if(!d.count){box.innerHTML=`<div style="padding:48px 0;text-align:center"><i class="fa-solid fa-clock" style="font-size:28px;color:var(--text-muted);display:block;margin-bottom:8px"></i><div style="font-size:12px;color:var(--text-muted)">No scans yet.</div></div>`;return;}
-    const RC={HIGH:'badge-high',MEDIUM:'badge-medium',LOW:'badge-low',SAFE:'badge-safe'};
-    const rows=d.logs.map(l=>{const col=l.label?'#f87171':'#34d399',time=new Date(l.timestamp).toLocaleTimeString();return`<tr style="border-top:1px solid var(--border-subtle)"><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${time}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;max-width:320px;color:${col}">${l.url}</td><td style="padding:10px 12px"><span class="badge ${RC[l.risk_level]||'badge-safe'}">${l.risk_level}</span></td><td class="mono" style="padding:10px 12px;font-size:12px;font-weight:700;color:${col}">${l.phishing_probability}%</td><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${l.latency_ms}ms</td></tr>`;}).join('');
-    box.innerHTML=`<table style="width:100%;text-align:left;min-width:600px"><thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)"><th style="padding:8px 12px">Time</th><th style="padding:8px 12px">URL</th><th style="padding:8px 12px">Risk</th><th style="padding:8px 12px">Score</th><th style="padding:8px 12px">Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
-  }catch{}
+
+async function refreshHistory() {
+  try {
+    const d = await fetch(API + '/logs?limit=50').then(r => r.json());
+    const box = document.getElementById('historyTable');
+
+    if (!d.count) {
+      box.innerHTML = '<div style="padding:30px">No scans yet.</div>';
+      return;
+    }
+
+    const RC = {
+      HIGH: 'badge-high',
+      MEDIUM: 'badge-medium',
+      LOW: 'badge-low',
+      SAFE: 'badge-safe'
+    };
+
+    const rows = d.logs.map(l => {
+      const risk = l.risk_level || 'LOW';
+      const col = risk === 'HIGH' ? '#f87171'
+        : risk === 'MEDIUM' ? '#f97316' : '#F59E0B';
+
+      const verdict = risk === 'HIGH' ? 'PHISHING'
+        : risk === 'MEDIUM' ? 'SUSPICIOUS'
+          : risk === 'UNDEFINED' ? 'UNDEFINED'
+            : risk === 'SAFE' ? 'SAFE' : 'UNVERIFIED';
+
+      const time = new Date(l.timestamp).toLocaleTimeString();
+
+      return `
+        <tr>
+          <td>${time}</td>
+          <td style="word-break:break-all;color:${col}">${l.url}</td>
+          <td><span class="badge ${RC[risk] || 'badge-low'}">${verdict}</span></td>
+          <td>${l.phishing_probability}%</td>
+          <td>${l.latency_ms}ms</td>
+        </tr>`;
+    }).join('');
+
+    box.innerHTML = `
+      <table style="width:100%;text-align:left">
+        <thead>
+          <tr>
+            <th>Time</th><th>URL</th><th>Verdict</th>
+            <th>Score</th><th>Latency</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>`;
+  } catch (e) {
+    console.error('History error:', e);
+  }
 }
 
+
 /* ── Ticker ── */
-async function updateTicker(){
-  try{const d=await fetch(API+'/logs?limit=20').then(r=>r.json());
-    if(!d.logs||!d.logs.length)return;
-    const items=[...d.logs,...d.logs].map(l=>{const col=l.label?'#f87171':'#34d399',icon=l.label?'⚠':'✓',short=l.url.length>55?l.url.slice(0,55)+'…':l.url;return`<span style="color:${col}">${icon} ${short}</span>`;});
-    document.getElementById('tickerInner').innerHTML=items.join('<span style="color:var(--text-muted);margin:0 12px">·</span>');
-  }catch{}
+
+async function updateTicker() {
+  try {
+    const d = await fetch(API + '/logs?limit=20').then(r => r.json());
+
+    if (!d.logs || !d.logs.length) return;
+
+    const items = [...d.logs, ...d.logs].map(l => {
+      const risk = l.risk_level || 'LOW';
+
+      const col = risk === 'HIGH' ? '#f87171'
+        : risk === 'MEDIUM' ? '#f97316' : '#F59E0B';
+
+      const icon = risk === 'HIGH' ? '⚠' : 'ⓘ';
+
+      const short = l.url.length > 55
+        ? l.url.slice(0, 55) + '…'
+        : l.url;
+
+      return `<span style="color:${col}">${icon} ${short}</span>`;
+    });
+
+    document.getElementById('tickerInner').innerHTML =
+      items.join('<span style="color:var(--text-muted);margin:0 12px">·</span>');
+
+  } catch (e) {
+    console.error('Ticker error:', e);
+  }
 }
+
 </script>
 </body>
 </html>

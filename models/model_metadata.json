@@ -1,5 +1,5 @@
 {
-  "model_name": "RandomForest",
+  "model_name": "DecisionTree",
   "feature_count": 22,
   "feature_names": [
     "url_length",
@@ -25,56 +25,41 @@
     "has_hex_encoding",
     "has_suspicious_keywords"
   ],
-  "dataset_size": 2000,
+  "dataset_size": 1069,
   "train_test_split": {
-    "train": 1600,
-    "test": 400
+    "train": 855,
+    "test": 214
   },
   "hyperparameters": {
-    "n_estimators": 80,
-    "max_depth": 10,
-    "min_samples_split": 6,
-    "min_samples_leaf": 3,
-    "max_features": "sqrt"
+    "max_depth": 2,
+    "max_features": 5,
+    "splitter": "random"
   },
   "benchmarks": {
     "DecisionTree": {
-      "accuracy": 98.75,
-      "precision": 98.99,
-      "recall": 98.5,
-      "f1_score": 98.75,
-      "cv_f1_mean": 96.88
-    },
-    "RandomForest": {
-      "accuracy": 99.75,
-      "precision": 100.0,
-      "recall": 99.5,
-      "f1_score": 99.75,
-      "cv_f1_mean": 99.37
-    },
-    "GradientBoosting": {
-      "accuracy": 100.0,
-      "precision": 100.0,
-      "recall": 100.0,
-      "f1_score": 100.0,
-      "cv_f1_mean": 100.0
+      "accuracy": 83.18,
+      "precision": 97.74,
+      "recall": 79.75,
+      "f1_score": 87.84,
+      "cv_f1_mean": 88.93
     }
   },
-  "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate     0.9950    1.0000    0.9975       200\n    Phishing     1.0000    0.9950    0.9975       200\n\n    accuracy                         0.9975       400\n   macro avg     0.9975    0.9975    0.9975       400\nweighted avg     0.9975    0.9975    0.9975       400\n",
+  "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate     0.5926    0.9412    0.7273        51\n    Phishing     0.9774    0.7975    0.8784       163\n\n    accuracy                         0.8318       214\n   macro avg     0.7850    0.8694    0.8028       214\nweighted avg     0.8857    0.8318    0.8424       214\n",
   "confusion_matrix": [
     [
-      200,
-      0
+      48,
+      3
     ],
     [
-      1,
-      199
+      33,
+      130
     ]
   ],
   "confusion_matrix_labels": {
-    "TN_legit_correct": 200,
-    "FP_legit_flagged_false_alarm": 0,
-    "FN_phish_missed": 1,
-    "TP_phish_caught": 199
-  }
+    "TN_legit_correct": 48,
+    "FP_legit_flagged_false_alarm": 3,
+    "FN_phish_missed": 33,
+    "TP_phish_caught": 130
+  },
+  "evaluation_note": "Metrics are calculated on a deduplicated stratified holdout split. They are not a guarantee of real-world performance. A shallow randomized decision tree is used to target the requested approximately 80% accuracy."
 }
