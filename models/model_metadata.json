@@ -1,0 +1,80 @@
+{
+  "model_name": "RandomForest",
+  "feature_count": 22,
+  "feature_names": [
+    "url_length",
+    "hostname_length",
+    "path_length",
+    "query_length",
+    "num_dots",
+    "num_hyphens",
+    "num_underscores",
+    "num_slashes",
+    "num_digits",
+    "digit_ratio",
+    "letter_ratio",
+    "has_ip_address",
+    "subdomain_count",
+    "tld_length",
+    "shannon_entropy",
+    "has_https",
+    "is_suspicious_tld",
+    "is_shortening_service",
+    "has_at_symbol",
+    "has_double_slash_redirect",
+    "has_hex_encoding",
+    "has_suspicious_keywords"
+  ],
+  "dataset_size": 2000,
+  "train_test_split": {
+    "train": 1600,
+    "test": 400
+  },
+  "hyperparameters": {
+    "n_estimators": 80,
+    "max_depth": 10,
+    "min_samples_split": 6,
+    "min_samples_leaf": 3,
+    "max_features": "sqrt"
+  },
+  "benchmarks": {
+    "DecisionTree": {
+      "accuracy": 98.75,
+      "precision": 98.99,
+      "recall": 98.5,
+      "f1_score": 98.75,
+      "cv_f1_mean": 96.88
+    },
+    "RandomForest": {
+      "accuracy": 99.75,
+      "precision": 100.0,
+      "recall": 99.5,
+      "f1_score": 99.75,
+      "cv_f1_mean": 99.37
+    },
+    "GradientBoosting": {
+      "accuracy": 100.0,
+      "precision": 100.0,
+      "recall": 100.0,
+      "f1_score": 100.0,
+      "cv_f1_mean": 100.0
+    }
+  },
+  "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate     0.9950    1.0000    0.9975       200\n    Phishing     1.0000    0.9950    0.9975       200\n\n    accuracy                         0.9975       400\n   macro avg     0.9975    0.9975    0.9975       400\nweighted avg     0.9975    0.9975    0.9975       400\n",
+  "confusion_matrix": [
+    [
+      200,
+      0
+    ],
+    [
+      1,
+      199
+    ]
+  ],
+  "confusion_matrix_labels": {
+    "TN_legit_correct": 200,
+    "FP_legit_flagged_false_alarm": 0,
+    "FN_phish_missed": 1,
+    "TP_phish_caught": 199
+  }
+}

@@ -1,0 +1,8 @@
+flask
+flask-cors
+scikit-learn
+xgboost  # optional; falls back to sklearn GradientBoosting if unavailable
+pandas
+numpy
+joblib
+requests

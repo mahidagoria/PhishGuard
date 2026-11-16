@@ -1,0 +1,1184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhishGuard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+
+:root {
+  --navy:       #0B1F3A;
+  --blue:       #1769E0;
+  --teal:       #00A896;
+  --cyan:       #22C7D6;
+  --slate:      #475569;
+  --red:        #E5484D;
+
+  --bg-base:    #071223;
+  --bg-surface: #0d1e35;
+  --bg-card:    #112240;
+  --bg-card-hi: #0F2D50;
+  --bg-hover:   #153560;
+
+  --border:        rgba(23,105,224,0.18);
+  --border-hi:     rgba(23,105,224,0.45);
+  --border-subtle: rgba(255,255,255,0.07);
+
+  --blue-dim:  rgba(23,105,224,0.13);
+  --teal-dim:  rgba(0,168,150,0.13);
+  --cyan-dim:  rgba(34,199,214,0.13);
+  --red-dim:   rgba(229,72,77,0.13);
+
+  --text:      #E8F1FB;
+  --text-sec:  #8AA4C2;
+  --text-muted:#4A6580;
+
+  --accent:     var(--cyan);
+  --nav-bg:     rgba(7,18,35,0.96);
+  --safe:       #00A896;
+  --safe-dim:   rgba(0,168,150,0.13);
+  --warn:       #F59E0B;
+  --warn-dim:   rgba(245,158,11,0.10);
+}
+
+/* ── LIGHT MODE ─────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:    #F8FAFC;
+  --bg-surface: #EEF4FB;
+  --bg-card:    #FFFFFF;
+  --bg-card-hi: #EAF3FF;
+  --bg-hover:   #DDE9F8;
+
+  --border:        rgba(23,105,224,0.14);
+  --border-hi:     rgba(23,105,224,0.40);
+  --border-subtle: rgba(0,0,0,0.07);
+
+  --blue-dim:  rgba(23,105,224,0.08);
+  --teal-dim:  rgba(0,168,150,0.09);
+  --cyan-dim:  rgba(34,199,214,0.09);
+  --red-dim:   rgba(229,72,77,0.09);
+
+  --text:      #0F172A;
+  --text-sec:  #2D4A6A;
+  --text-muted:#475569;
+
+  --accent:    var(--blue);
+  --nav-bg:    rgba(248,250,252,0.97);
+  --safe:      #059669;
+  --safe-dim:  rgba(5,150,105,0.10);
+  --warn:      #D97706;
+  --warn-dim:  rgba(217,119,6,0.09);
+  --red:       #DC2626;
+  --red-dim:   rgba(220,38,38,0.09);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg-base);
+  color: var(--text);
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  transition: background .25s, color .25s;
+}
+
+[data-theme="dark"] body::before {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background: radial-gradient(ellipse 90% 40% at 50% -5%, rgba(23,105,224,0.10) 0%, transparent 60%);
+}
+[data-theme="dark"] body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(34,199,214,0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34,199,214,0.022) 1px, transparent 1px);
+  background-size: 52px 52px;
+}
+#app { position: relative; z-index: 1; }
+
+/* ════════════════════════════════════════════════════════════
+   NAVIGATION
+════════════════════════════════════════════════════════════ */
+.nav-root {
+  background: var(--nav-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-inner {
+  max-width: 1280px; margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+
+/* Logo lockup */
+.nav-brand {
+  display: flex; align-items: center; gap: 12px;
+  text-decoration: none; flex-shrink: 0;
+}
+.nav-logo { height: 36px; width: auto; object-fit: contain; }
+.nav-logo-fallback {
+  width: 36px; height: 36px; border-radius: 9px;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  display: none; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.nav-wordmark {
+  font-size: 17px; font-weight: 800; letter-spacing: -0.4px;
+  display: flex; align-items: center; gap: 1px; line-height: 1;
+}
+.nav-wordmark .w-phish { color: var(--navy); }
+[data-theme="dark"] .nav-wordmark .w-phish { color: #C8DDF5; }
+.nav-wordmark .w-guard { color: var(--blue); }
+.nav-wordmark .w-ai {
+  margin-left: 6px;
+  padding: 2px 8px; border-radius: 6px;
+  background: linear-gradient(135deg, var(--teal), var(--cyan));
+  color: #fff;
+  font-size: 12px; font-weight: 800; letter-spacing: 0.5px;
+}
+
+/* Nav center — status */
+.nav-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 12px; border-radius: 20px;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  font-size: 12px; color: var(--text-muted);
+}
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red); flex-shrink: 0;
+}
+.status-dot.online {
+  background: var(--safe);
+  box-shadow: 0 0 0 2px rgba(0,168,150,0.25);
+  animation: pulse-status 2s ease-in-out infinite;
+}
+@keyframes pulse-status { 0%,100%{opacity:1} 50%{opacity:.55} }
+
+/* Nav right */
+.nav-right { display: flex; align-items: center; gap: 8px; }
+
+.nav-badge {
+  padding: 4px 10px; border-radius: 6px;
+  background: var(--blue-dim); border: 1px solid var(--border-hi);
+  font-size: 11px; font-weight: 700; color: var(--cyan);
+  letter-spacing: 0.02em; white-space: nowrap;
+}
+
+.theme-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--bg-surface); border: 1px solid var(--border);
+  color: var(--accent); font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .2s, transform .15s;
+}
+.theme-btn:hover { background: var(--bg-hover); transform: scale(1.07); }
+
+/* ════════════════════════════════════════════════════════════
+   LAYOUT PRIMITIVES
+════════════════════════════════════════════════════════════ */
+.page-wrap { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+.card-accent {
+  background: var(--bg-card-hi);
+  border: 1px solid var(--border-hi);
+  border-radius: 12px;
+}
+.surface {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+}
+.divider { height: 1px; background: var(--border-subtle); }
+
+/* ════════════════════════════════════════════════════════════
+   KPI CARDS
+════════════════════════════════════════════════════════════ */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 20px;
+}
+@media (max-width:900px){ .kpi-grid{ grid-template-columns:repeat(2,1fr); } }
+@media (max-width:480px){ .kpi-grid{ grid-template-columns:1fr 1fr; } }
+
+.kpi-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px; padding: 20px;
+  transition: transform .2s, box-shadow .2s;
+}
+.kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 28px rgba(23,105,224,0.10);
+}
+.kpi-icon {
+  width: 34px; height: 34px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.kpi-value { font-size: 28px; font-weight: 800; line-height: 1.1; color: var(--text); }
+.kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+.kpi-bar { height: 3px; border-radius: 2px; background: var(--border-subtle); margin-top: 10px; overflow: hidden; }
+.kpi-bar-fill { height: 100%; border-radius: 2px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+
+/* ════════════════════════════════════════════════════════════
+   TICKER
+════════════════════════════════════════════════════════════ */
+.ticker-wrap {
+  overflow: hidden; border-radius: 8px;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  margin-bottom: 20px;
+}
+.ticker-row { display: flex; align-items: center; height: 36px; }
+.ticker-label {
+  flex-shrink: 0; padding: 0 16px;
+  border-right: 1px solid var(--border-subtle);
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11px; font-weight: 700; letter-spacing: .06em;
+  color: var(--red); text-transform: uppercase; white-space: nowrap;
+}
+.ticker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); box-shadow: 0 0 6px var(--red); }
+.ticker-scroll { overflow: hidden; flex: 1; padding: 0 14px; }
+@keyframes ticker-run { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+.ticker-inner { display: flex; gap: 36px; white-space: nowrap; animation: ticker-run 40s linear infinite; font-size: 12px; }
+.ticker-inner:hover { animation-play-state: paused; }
+
+/* ════════════════════════════════════════════════════════════
+   TAB SYSTEM
+════════════════════════════════════════════════════════════ */
+.tab-bar {
+  display: flex; gap: 2px; overflow-x: auto;
+  background: var(--bg-surface); border: 1px solid var(--border-subtle);
+  border-radius: 10px; padding: 4px;
+  margin-bottom: 20px;
+}
+.tab-bar::-webkit-scrollbar { height: 0; }
+
+.tab-btn {
+  padding: 8px 16px; border-radius: 7px;
+  font-size: 13px; font-weight: 500; white-space: nowrap;
+  color: var(--text-muted); cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  border: 1px solid transparent;
+  transition: all .18s;
+}
+.tab-btn:hover { color: var(--text); background: var(--bg-hover); }
+.tab-btn.active {
+  color: var(--cyan);
+  background: var(--bg-card);
+  border-color: var(--border-hi);
+}
+
+/* ════════════════════════════════════════════════════════════
+   FORM CONTROLS
+════════════════════════════════════════════════════════════ */
+.input-field {
+  width: 100%; background: var(--bg-surface);
+  border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 10px 14px;
+  font-size: 13px; font-family: 'JetBrains Mono', monospace;
+  outline: none; transition: border-color .2s, background .2s;
+}
+.input-field:focus { border-color: var(--blue); background: var(--bg-card); }
+.input-field::placeholder { color: var(--text-muted); }
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--blue), #1455C0);
+  color: #fff; border: none; border-radius: 8px;
+  padding: 10px 20px; font-size: 13px; font-weight: 700;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  transition: filter .15s, transform .1s;
+  box-shadow: 0 2px 12px rgba(23,105,224,0.30);
+}
+.btn-primary:hover   { filter: brightness(1.12); }
+.btn-primary:active  { transform: scale(.98); }
+.btn-primary:disabled{ opacity: .45; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--bg-surface); color: var(--text-sec);
+  border: 1px solid var(--border-subtle); border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 500;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  transition: background .2s, color .2s;
+}
+.btn-secondary:hover { background: var(--bg-hover); color: var(--text); }
+
+/* ════════════════════════════════════════════════════════════
+   BADGES
+════════════════════════════════════════════════════════════ */
+.badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 9px; border-radius: 20px;
+  font-size: 11px; font-weight: 700; letter-spacing: .03em;
+}
+.badge-safe   { background: var(--safe-dim);  color: #34d399; border: 1px solid rgba(0,168,150,.28); }
+.badge-low    { background: var(--warn-dim);  color: #fbbf24; border: 1px solid rgba(245,158,11,.25); }
+.badge-medium { background: rgba(249,115,22,.1); color: #fb923c; border: 1px solid rgba(249,115,22,.25); }
+.badge-high   { background: var(--red-dim);   color: #f87171; border: 1px solid rgba(229,72,77,.28); }
+.badge-brand  { background: var(--blue-dim);  color: var(--cyan); border: 1px solid var(--border-hi); }
+
+/* ════════════════════════════════════════════════════════════
+   SAMPLE PILLS
+════════════════════════════════════════════════════════════ */
+.pill-safe {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  background: var(--safe-dim); color: #34d399;
+  border: 1px solid rgba(0,168,150,.28); transition: background .18s;
+}
+.pill-safe:hover { background: rgba(0,168,150,.22); }
+.pill-danger {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  background: var(--red-dim); color: #f87171;
+  border: 1px solid rgba(229,72,77,.28); transition: background .18s;
+}
+.pill-danger:hover { background: rgba(229,72,77,.22); }
+
+/* ════════════════════════════════════════════════════════════
+   GAUGE
+════════════════════════════════════════════════════════════ */
+.gauge-bg   { fill: none; stroke: rgba(34,199,214,0.10); stroke-width: 16; }
+.gauge-fill { fill: none; stroke-width: 16; stroke-linecap: round;
+              transition: stroke-dashoffset 1.3s cubic-bezier(.4,0,.2,1), stroke .5s; }
+
+/* ════════════════════════════════════════════════════════════
+   FEATURE BARS
+════════════════════════════════════════════════════════════ */
+.feat-bar { height: 5px; border-radius: 3px; background: var(--border-subtle); overflow: hidden; }
+.feat-bar-fill { height: 100%; border-radius: 3px; transition: width .9s cubic-bezier(.4,0,.2,1); }
+
+/* ════════════════════════════════════════════════════════════
+   ANIMATIONS
+════════════════════════════════════════════════════════════ */
+@keyframes sweep { 0%{background-position:200% 0}100%{background-position:-200% 0} }
+.loader-bar {
+  height: 2px; border-radius: 1px;
+  background: linear-gradient(90deg, var(--blue), var(--cyan), var(--blue));
+  background-size: 200% 100%;
+  animation: sweep 1.2s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner { animation: spin .8s linear infinite; }
+@keyframes fade-up { from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none} }
+.fade-up { animation: fade-up .3s ease-out forwards; }
+@keyframes slide-in { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none} }
+.slide-in { animation: slide-in .3s ease-out forwards; }
+
+/* ════════════════════════════════════════════════════════════
+   SCROLLBAR
+════════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: var(--bg-base); }
+::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--blue); }
+
+/* ════════════════════════════════════════════════════════════
+   TOAST
+════════════════════════════════════════════════════════════ */
+.toast {
+  position: fixed; bottom: 20px; right: 20px; z-index: 999;
+  padding: 11px 16px; border-radius: 8px;
+  background: var(--bg-card-hi); border: 1px solid var(--border-hi);
+  font-size: 13px; max-width: 340px;
+  transform: translateY(60px); opacity: 0;
+  transition: all .35s cubic-bezier(.4,0,.2,1);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+
+/* Misc */
+.mono { font-family: 'JetBrains Mono', monospace; }
+.ds-row:hover { background: var(--bg-hover); }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════════════════════════════════════════════════════
+     NAVIGATION
+══════════════════════════════════════════════════════════ -->
+<header class="nav-root">
+  <div class="nav-inner">
+
+    <!-- Brand -->
+    <a class="nav-brand" href="/">
+      <img src="/static/logo.png" alt="PhishGuard" class="nav-logo"
+           onerror="this.style.display='none';document.getElementById('nb-fallback').style.display='flex'">
+      <span id="nb-fallback" class="nav-logo-fallback">
+        <i class="fa-solid fa-shield-halved" style="color:#fff;font-size:16px"></i>
+      </span>
+      <span class="nav-wordmark hidden sm:flex">
+        <span class="w-phish">Phish</span><span class="w-guard">Guard</span>
+        <span class="w-ai">AI</span>
+      </span>
+    </a>
+
+    <!-- Status pill -->
+    <div class="nav-status">
+      <span id="statusDot" class="status-dot"></span>
+      <span id="statusText" style="color:var(--text-muted)">Connecting…</span>
+    </div>
+
+    <!-- Right controls -->
+    <div class="nav-right">
+      <span class="nav-badge hidden md:inline-flex" id="featureCountNav">— signals</span>
+      <button class="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+        <i class="fa-solid fa-moon" id="modeIcon"></i>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════════
+     PAGE
+══════════════════════════════════════════════════════════ -->
+<main class="page-wrap">
+
+  <!-- KPI STRIP -->
+  <div class="kpi-grid slide-in">
+
+    <div class="kpi-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Model Accuracy</span>
+        <span class="kpi-icon" style="background:var(--blue-dim)">
+          <i class="fa-solid fa-crosshairs" style="color:var(--cyan)"></i>
+        </span>
+      </div>
+      <div class="kpi-value" id="kpiAccuracy">—</div>
+      <div class="kpi-bar"><div id="kpiAccBar" class="kpi-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--blue),var(--cyan))"></div></div>
+      <div class="kpi-label">Best classifier · test set</div>
+    </div>
+
+    <div class="kpi-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Dataset Size</span>
+        <span class="kpi-icon" style="background:var(--teal-dim)">
+          <i class="fa-solid fa-database" style="color:var(--teal)"></i>
+        </span>
+      </div>
+      <div class="kpi-value" id="kpiDataset">—</div>
+      <div class="kpi-label">Labeled URLs · 1:1 balanced</div>
+    </div>
+
+    <div class="kpi-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Avg Latency</span>
+        <span class="kpi-icon" style="background:rgba(245,158,11,.12)">
+          <i class="fa-solid fa-gauge-high" style="color:#F59E0B"></i>
+        </span>
+      </div>
+      <div class="kpi-value"><span id="kpiLatency">—</span><span style="font-size:14px;font-weight:400;color:var(--text-muted);margin-left:4px">ms</span></div>
+      <div class="kpi-label">Per-URL inference time</div>
+    </div>
+
+    <div class="kpi-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">URLs Scanned</span>
+        <span class="kpi-icon" style="background:var(--red-dim)">
+          <i class="fa-solid fa-magnifying-glass" style="color:var(--red)"></i>
+        </span>
+      </div>
+      <div class="kpi-value" id="kpiScanned">0</div>
+      <div class="kpi-label">This session</div>
+    </div>
+
+  </div>
+
+  <!-- LIVE TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-row">
+      <div class="ticker-label">
+        <span class="ticker-dot"></span> Live Feed
+      </div>
+      <div class="ticker-scroll">
+        <div id="tickerInner" class="ticker-inner" style="color:var(--text-muted)">
+          <span>Initializing threat feed…</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB BAR -->
+  <div class="tab-bar slide-in">
+    <button class="tab-btn active" id="tab-scan"     onclick="switchTab('scan')">
+      <i class="fa-solid fa-magnifying-glass" style="font-size:11px"></i> URL Scanner
+    </button>
+    <button class="tab-btn" id="tab-features" onclick="switchTab('features')">
+      <i class="fa-solid fa-chart-column" style="font-size:11px"></i> Feature Analysis
+    </button>
+    <button class="tab-btn" id="tab-models"   onclick="switchTab('models')">
+      <i class="fa-solid fa-microchip" style="font-size:11px"></i> ML Benchmarks
+    </button>
+    <button class="tab-btn" id="tab-batch"    onclick="switchTab('batch')">
+      <i class="fa-solid fa-layer-group" style="font-size:11px"></i> Batch Scanner
+    </button>
+    <button class="tab-btn" id="tab-dataset"  onclick="switchTab('dataset')">
+      <i class="fa-solid fa-database" style="font-size:11px"></i> Dataset Explorer
+    </button>
+    <button class="tab-btn" id="tab-history"  onclick="switchTab('history')">
+      <i class="fa-solid fa-clock-rotate-left" style="font-size:11px"></i> Scan History
+    </button>
+  </div>
+
+  <!-- ══════════ URL SCANNER ══════════ -->
+  <section id="panel-scan" class="slide-in">
+    <div style="display:grid;grid-template-columns:1fr;gap:20px">
+      <div style="display:grid;grid-template-columns:3fr 2fr;gap:20px">
+
+        <!-- Input + result -->
+        <div class="card" style="padding:24px">
+          <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-magnifying-glass" style="color:var(--cyan);font-size:13px"></i>
+            Analyze a URL
+          </h2>
+
+          <div style="display:flex;gap:8px;margin-bottom:16px">
+            <div style="flex:1;position:relative">
+              <i class="fa-solid fa-link" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:11px;color:var(--text-muted)"></i>
+              <input id="urlInput" type="text" class="input-field" style="padding-left:34px"
+                     placeholder="https://example.com/path"
+                     onkeydown="if(event.key==='Enter')scanURL()">
+            </div>
+            <button onclick="scanURL()" id="scanBtn" class="btn-primary">
+              <i class="fa-solid fa-bolt" style="font-size:11px"></i> Analyze
+            </button>
+          </div>
+
+          <div style="margin-bottom:16px">
+            <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-bottom:8px">Quick test samples:</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px">
+              <button class="pill-safe" onclick="quickScan('https://www.google.com')"><i class="fa-solid fa-check" style="font-size:10px"></i> google.com</button>
+              <button class="pill-safe" onclick="quickScan('https://www.gecajmer.ac.in')"><i class="fa-solid fa-check" style="font-size:10px"></i> gecajmer.ac.in</button>
+              <button class="pill-danger" onclick="quickScan('http://secure-login-8847.verify-account.tk/signin?user=admin')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> verify-account.tk</button>
+              <button class="pill-danger" onclick="quickScan('https://www-paypa1-9921.secure-update.ml/login')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> paypa1 spoof</button>
+              <button class="pill-danger" onclick="quickScan('http://192.168.45.12/paypal/verify/update')"><i class="fa-solid fa-triangle-exclamation" style="font-size:10px"></i> IP-based URL</button>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div id="scanLoading" class="hidden" style="padding:40px 0;text-align:center">
+            <div class="spinner" style="width:32px;height:32px;border-radius:50%;border:2px solid rgba(23,105,224,.2);border-top-color:var(--blue);margin:0 auto 12px"></div>
+            <div style="font-size:13px;color:var(--text-muted)">Extracting 22 signals, classifying…</div>
+            <div class="loader-bar" style="width:180px;margin:10px auto 0;border-radius:2px"></div>
+          </div>
+
+          <!-- Empty -->
+          <div id="scanEmpty" style="padding:40px 0;text-align:center">
+            <div style="width:52px;height:52px;background:var(--bg-surface);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
+              <i class="fa-solid fa-shield-halved" style="font-size:22px;color:var(--text-muted)"></i>
+            </div>
+            <div style="font-size:13px;color:var(--text-muted)">Enter a URL above to begin threat analysis</div>
+          </div>
+
+          <!-- Result -->
+          <div id="scanResult" class="hidden fade-up">
+            <div class="divider" style="margin:16px 0"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+
+              <!-- Gauge -->
+              <div style="text-align:center">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:4px">Phishing Risk Score</div>
+                <div style="position:relative;width:200px;height:118px;margin:0 auto">
+                  <svg viewBox="0 0 200 118" style="width:100%">
+                    <path class="gauge-bg" d="M 11 104 A 86 86 0 0 1 189 104"/>
+                    <path id="gaugeFill" class="gauge-fill" stroke="var(--teal)"
+                          d="M 11 104 A 86 86 0 0 1 189 104"
+                          stroke-dasharray="270" stroke-dashoffset="270"/>
+                  </svg>
+                  <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:4px">
+                    <div id="riskPct" style="font-size:36px;font-weight:900;color:var(--text);line-height:1">0%</div>
+                    <div id="riskLbl" style="font-size:10px;font-weight:700;letter-spacing:.12em;color:var(--text-muted);margin-top:2px">SAFE</div>
+                  </div>
+                </div>
+                <div id="riskBadge" class="badge badge-safe" style="margin-top:8px">
+                  <i class="fa-solid fa-shield" style="font-size:10px"></i> Safe
+                </div>
+              </div>
+
+              <!-- Details -->
+              <div style="display:flex;flex-direction:column;gap:10px">
+                <div>
+                  <div style="font-size:11px;color:var(--text-muted);margin-bottom:4px">Analyzed URL</div>
+                  <div id="resultUrl" class="mono surface" style="font-size:11px;padding:10px;word-break:break-all;color:var(--text)">—</div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                  <div class="surface" style="padding:10px">
+                    <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Confidence</div>
+                    <div id="resultConf" style="font-size:18px;font-weight:800;color:var(--text)">—</div>
+                  </div>
+                  <div class="surface" style="padding:10px">
+                    <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Latency</div>
+                    <div id="resultLat" style="font-size:18px;font-weight:800;color:var(--text)">—</div>
+                  </div>
+                </div>
+                <div class="surface" style="padding:10px">
+                  <div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Classification</div>
+                  <div id="resultClass" style="font-weight:600">—</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        <!-- Feature Breakdown -->
+        <div class="card" style="padding:24px">
+          <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-list-check" style="color:var(--cyan);font-size:13px"></i>
+            Feature Breakdown
+            <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text-muted)">22 signals</span>
+          </h2>
+          <div id="featureBreakdown" style="display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto;padding-right:4px">
+            <div style="padding:36px 0;text-align:center">
+              <i class="fa-solid fa-chart-simple" style="font-size:22px;color:var(--text-muted);display:block;margin-bottom:8px"></i>
+              <div style="font-size:12px;color:var(--text-muted)">Scan a URL to view extracted signals</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ FEATURE ANALYSIS ══════════ -->
+  <section id="panel-features" class="hidden slide-in">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-code-compare" style="color:var(--cyan);font-size:13px"></i>
+          Feature Comparison — Legitimate vs Phishing
+        </h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Legitimate URL</label>
+            <input id="compareLegit" type="text" class="input-field" value="https://www.google.com">
+          </div>
+          <div>
+            <label style="font-size:11px;color:var(--text-muted);display:block;margin-bottom:4px">Phishing URL</label>
+            <input id="comparePhish" type="text" class="input-field" value="http://secure-login-8847.verify-account.tk/signin">
+          </div>
+        </div>
+        <button onclick="compareFeatures()" class="btn-primary" style="margin-bottom:18px">
+          <i class="fa-solid fa-chart-bar" style="font-size:11px"></i> Compare Features
+        </button>
+        <div style="height:340px"><canvas id="featureCompareChart"></canvas></div>
+      </div>
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-layer-group" style="color:var(--cyan);font-size:13px"></i> Signal Categories
+        </h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="surface" style="padding:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="fa-solid fa-ruler" style="color:var(--cyan);font-size:11px"></i> Length Metrics</div>
+            <div style="font-size:11px;color:var(--text-muted)">url_length · hostname_length · path_length · query_length</div>
+          </div>
+          <div class="surface" style="padding:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="fa-solid fa-font" style="color:var(--cyan);font-size:11px"></i> Character Analysis</div>
+            <div style="font-size:11px;color:var(--text-muted)">dots · hyphens · underscores · slashes · digit_ratio · letter_ratio</div>
+          </div>
+          <div class="surface" style="padding:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="fa-solid fa-sitemap" style="color:var(--teal);font-size:11px"></i> Structural</div>
+            <div style="font-size:11px;color:var(--text-muted)">has_ip_address · subdomain_count · tld_length · has_https</div>
+          </div>
+          <div class="surface" style="padding:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="fa-solid fa-flag" style="color:var(--red);font-size:11px"></i> Risk Indicators</div>
+            <div style="font-size:11px;color:var(--text-muted)">suspicious TLD · shortener · @ symbol · double-slash · hex encoding · phishing keywords</div>
+          </div>
+          <div class="surface" style="padding:12px">
+            <div style="font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:4px"><i class="fa-solid fa-wave-square" style="color:var(--warn);font-size:11px"></i> Shannon Entropy</div>
+            <div style="font-size:11px;color:var(--text-muted)">Detects obfuscated, randomized character patterns common in phishing URLs</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ ML BENCHMARKS ══════════ -->
+  <section id="panel-models" class="hidden slide-in">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px">
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-chart-bar" style="color:var(--cyan);font-size:13px"></i> Classifier Benchmark Results
+          <span style="margin-left:auto;font-size:11px;font-weight:400;color:var(--text-muted)">5-fold CV · 2,000 URL corpus</span>
+        </h2>
+        <div style="height:380px"><canvas id="modelBenchChart"></canvas></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="card-accent" style="padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted)">Deployed Model</span>
+            <span class="badge badge-brand"><i class="fa-solid fa-star" style="font-size:10px"></i> Selected</span>
+          </div>
+          <div id="bestModelName" style="font-size:22px;font-weight:800;color:var(--cyan);margin-bottom:14px">—</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Accuracy</div><div id="bmAcc" style="font-size:17px;font-weight:800;color:var(--text)">—</div></div>
+            <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">CV F1 (5-fold)</div><div id="bmF1" style="font-size:17px;font-weight:800;color:var(--text)">—</div></div>
+            <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Precision</div><div id="bmPrec" style="font-size:17px;font-weight:800;color:var(--text)">—</div></div>
+            <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Recall</div><div id="bmRec" style="font-size:17px;font-weight:800;color:var(--text)">—</div></div>
+          </div>
+        </div>
+        <div class="card" style="padding:20px">
+          <h3 style="font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;margin-bottom:14px">
+            <i class="fa-solid fa-table-cells" style="color:var(--cyan);font-size:12px"></i> Confusion Matrix
+          </h3>
+          <div style="display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;font-size:11px">
+            <div></div>
+            <div style="text-align:center;font-weight:600;padding:6px 0;color:var(--text-muted)">Pred: Legit</div>
+            <div style="text-align:center;font-weight:600;padding:6px 0;color:var(--text-muted)">Pred: Phish</div>
+            <div style="text-align:center;font-weight:600;padding:6px 0;color:var(--text-muted)">Act: Legit</div>
+            <div id="cmTN" class="mono" style="padding:12px;border-radius:8px;text-align:center;font-size:16px;font-weight:800;background:var(--safe-dim);color:#34d399;border:1px solid rgba(0,168,150,.25)">—</div>
+            <div id="cmFP" class="mono" style="padding:12px;border-radius:8px;text-align:center;font-size:16px;font-weight:800;background:var(--red-dim);color:#f87171;border:1px solid rgba(229,72,77,.25)">—</div>
+            <div style="text-align:center;font-weight:600;padding:6px 0;color:var(--text-muted)">Act: Phish</div>
+            <div id="cmFN" class="mono" style="padding:12px;border-radius:8px;text-align:center;font-size:16px;font-weight:800;background:var(--warn-dim);color:#fbbf24;border:1px solid rgba(245,158,11,.25)">—</div>
+            <div id="cmTP" class="mono" style="padding:12px;border-radius:8px;text-align:center;font-size:16px;font-weight:800;background:var(--safe-dim);color:#34d399;border:1px solid rgba(0,168,150,.25)">—</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
+            <div class="surface" style="padding:8px;text-align:center">
+              <div style="font-size:10px;color:var(--text-muted)">Detection Rate</div>
+              <div id="cmTPR" style="font-weight:800;color:var(--text)">—</div>
+            </div>
+            <div class="surface" style="padding:8px;text-align:center">
+              <div style="font-size:10px;color:var(--text-muted)">False Alarm</div>
+              <div id="cmFPR" style="font-weight:800;color:var(--text)">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ BATCH SCANNER ══════════ -->
+  <section id="panel-batch" class="hidden slide-in">
+    <div style="display:grid;grid-template-columns:2fr 3fr;gap:20px">
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:8px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-layer-group" style="color:var(--cyan);font-size:13px"></i> Batch URL Input
+        </h2>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px">One URL per line. Classifies up to 50 URLs in a single request.</p>
+        <textarea id="batchInput" rows="13" class="input-field" style="resize:none;font-size:12px;margin-bottom:12px"
+          placeholder="https://www.google.com&#10;https://github.com&#10;http://secure-login-verify.tk/signin&#10;..."></textarea>
+        <div style="display:flex;gap:8px">
+          <button onclick="runBatchScan()" class="btn-primary" style="flex:1"><i class="fa-solid fa-bolt" style="font-size:11px"></i> Run Batch Scan</button>
+          <button onclick="loadBatchSamples()" class="btn-secondary"><i class="fa-solid fa-file-arrow-down" style="font-size:11px"></i> Load Samples</button>
+        </div>
+      </div>
+      <div class="card" style="padding:24px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+            <i class="fa-solid fa-table-list" style="color:var(--cyan);font-size:13px"></i> Results
+          </h2>
+          <div id="batchStats" class="hidden" style="font-size:12px;color:var(--text-muted)">
+            <span id="batchCount"></span> &nbsp;·&nbsp; <span id="batchAvgLat"></span>
+          </div>
+        </div>
+        <div id="batchResults" style="max-height:440px;overflow-y:auto">
+          <div style="padding:56px 0;text-align:center">
+            <i class="fa-solid fa-inbox" style="font-size:28px;color:var(--text-muted);display:block;margin-bottom:8px"></i>
+            <div style="font-size:12px;color:var(--text-muted)">No results yet — enter URLs and click Run.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ DATASET EXPLORER ══════════ -->
+  <section id="panel-dataset" class="hidden slide-in">
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:20px;margin-bottom:20px">
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-chart-pie" style="color:var(--cyan);font-size:13px"></i> Training Dataset Overview
+        </h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:18px">
+          <div class="surface" style="padding:12px;border-color:rgba(0,168,150,.22)"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Legitimate</div><div id="dsLegit" style="font-size:22px;font-weight:800;color:#34d399">—</div></div>
+          <div class="surface" style="padding:12px;border-color:rgba(229,72,77,.22)"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Phishing</div><div id="dsPhish" style="font-size:22px;font-weight:800;color:#f87171">—</div></div>
+          <div class="surface" style="padding:12px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Total</div><div id="dsTotal" style="font-size:22px;font-weight:800;color:var(--text)">—</div></div>
+          <div class="surface" style="padding:12px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Features</div><div style="font-size:22px;font-weight:800;color:var(--text)">22</div></div>
+        </div>
+        <div style="height:230px"><canvas id="datasetChart"></canvas></div>
+      </div>
+      <div class="card" style="padding:24px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-magnifying-glass-chart" style="color:var(--cyan);font-size:13px"></i> Dataset Insights
+        </h2>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Avg Length — Legitimate</div><div id="dsAvgLegit" style="font-weight:600;color:#34d399">—</div></div>
+          <div class="surface" style="padding:10px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:2px">Avg Length — Phishing</div><div id="dsAvgPhish" style="font-weight:600;color:#f87171">—</div></div>
+          <div class="surface" style="padding:10px">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">Suspicious TLD Usage</div>
+            <div style="display:flex;gap:16px;font-size:12px">
+              <span style="color:#34d399">Legit: <b id="dsTldLegit">—</b></span>
+              <span style="color:#f87171">Phish: <b id="dsTldPhish">—</b></span>
+            </div>
+          </div>
+          <div class="surface" style="padding:10px">
+            <div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">IP-Based URLs</div>
+            <div style="display:flex;gap:16px;font-size:12px">
+              <span style="color:#34d399">Legit: <b id="dsIpLegit">—</b></span>
+              <span style="color:#f87171">Phish: <b id="dsIpPhish">—</b></span>
+            </div>
+          </div>
+          <div class="surface" style="padding:10px;border-color:var(--border-hi)">
+            <div style="font-size:11px;font-weight:600;color:var(--cyan);margin-bottom:4px"><i class="fa-solid fa-circle-info" style="margin-right:4px"></i>Data Sources</div>
+            <div style="font-size:11px;color:var(--text-muted)">PhishTank · OpenPhish · Kaggle URL Datasets (locally curated)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card" style="padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:16px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-table" style="color:var(--cyan);font-size:13px"></i> Training Data Sample
+        </h2>
+        <div style="display:flex;gap:6px">
+          <button onclick="loadDatasetPreview('all')"   id="dsFilterAll"   class="tab-btn active" style="font-size:12px;padding:6px 12px">All</button>
+          <button onclick="loadDatasetPreview('0')"     id="dsFilterLegit" class="tab-btn"         style="font-size:12px;padding:6px 12px">Legitimate</button>
+          <button onclick="loadDatasetPreview('1')"     id="dsFilterPhish" class="tab-btn"         style="font-size:12px;padding:6px 12px">Phishing</button>
+        </div>
+      </div>
+      <div id="datasetTable" style="overflow-x:auto;max-height:350px;overflow-y:auto">
+        <div style="padding:28px 0;text-align:center;font-size:13px;color:var(--text-muted)">Loading preview…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════ SCAN HISTORY ══════════ -->
+  <section id="panel-history" class="hidden slide-in">
+    <div class="card" style="padding:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h2 style="font-size:15px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px">
+          <i class="fa-solid fa-clock-rotate-left" style="color:var(--cyan);font-size:13px"></i> Scan History
+        </h2>
+        <button onclick="refreshHistory()" class="btn-secondary" style="font-size:12px;padding:7px 14px">
+          <i class="fa-solid fa-arrows-rotate" style="font-size:11px"></i> Refresh
+        </button>
+      </div>
+      <div id="historyTable" style="overflow-x:auto">
+        <div style="padding:48px 0;text-align:center">
+          <i class="fa-solid fa-clock" style="font-size:28px;color:var(--text-muted);display:block;margin-bottom:8px"></i>
+          <div style="font-size:12px;color:var(--text-muted)">No scans yet. Use the URL Scanner tab.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer style="max-width:1280px;margin:0 auto;padding:0 24px 28px">
+  <div class="divider" style="margin-bottom:16px"></div>
+  <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--text-muted)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <img src="/static/logo.png" alt="" style="height:18px;width:auto;opacity:.5" onerror="this.style.display='none'">
+      <span>Real-Time URL Threat Detection</span>
+    </div>
+    <span>100% Local &nbsp;·&nbsp; Zero Cloud Cost &nbsp;·&nbsp; Privacy-Preserving</span>
+  </div>
+</footer>
+
+</div><!-- #app -->
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   PhishGuard AI — Dashboard JS
+   ============================================================ */
+const API = window.location.origin;
+let _meta = null, sessionScans = 0, sessionLatencies = [];
+let featCompChart = null, modelChart = null, dsChart = null;
+
+/* ── Theme ── */
+function toggleTheme() {
+  const html = document.documentElement;
+  const dark = html.getAttribute('data-theme') === 'dark';
+  html.setAttribute('data-theme', dark ? 'light' : 'dark');
+  document.getElementById('modeIcon').className = dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+  localStorage.setItem('pg-theme', dark ? 'light' : 'dark');
+  if (modelChart)    { modelChart.destroy();    modelChart    = null; loadModelBenchmarks(); }
+  if (dsChart)       { dsChart.destroy();       dsChart       = null; }
+  if (featCompChart) { featCompChart.destroy(); featCompChart = null; }
+}
+(function initTheme() {
+  const saved = localStorage.getItem('pg-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('modeIcon').className = saved === 'dark' ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+  });
+})();
+
+/* ── Toast ── */
+function toast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  const c = { danger:'#f87171', success:'#34d399', info:'var(--cyan)' };
+  const i = type==='danger'?'fa-triangle-exclamation':type==='success'?'fa-circle-check':'fa-circle-info';
+  t.innerHTML = `<i class="fa-solid ${i}" style="margin-right:8px;color:${c[type]||c.info}"></i>${msg}`;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+/* ── Tabs ── */
+const TABS = ['scan','features','models','batch','dataset','history'];
+function switchTab(tab) {
+  TABS.forEach(t => {
+    document.getElementById('tab-'+t).classList.remove('active');
+    document.getElementById('panel-'+t).classList.add('hidden');
+  });
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('panel-'+tab).classList.remove('hidden');
+  if (tab==='models'   && !modelChart)    loadModelBenchmarks();
+  if (tab==='dataset'  && !dsChart)       loadDatasetExplorer();
+  if (tab==='features' && !featCompChart) compareFeatures();
+  if (tab==='history')                    refreshHistory();
+}
+
+/* ── Boot ── */
+window.addEventListener('DOMContentLoaded', async () => {
+  await checkHealth();
+  await loadModelMetadata();
+  await refreshHistory();
+  updateTicker();
+});
+
+/* ── Health ── */
+async function checkHealth() {
+  try {
+    const d = await fetch(API+'/health').then(r=>r.json());
+    const dot = document.getElementById('statusDot');
+    const txt = document.getElementById('statusText');
+    if (d.model === 'loaded') {
+      dot.classList.add('online');
+      txt.textContent = 'Engine Online'; txt.style.color = 'var(--teal)';
+    } else { txt.textContent = 'Model Not Loaded'; }
+    document.getElementById('featureCountNav').textContent = d.feature_count + ' signals';
+  } catch { document.getElementById('statusText').textContent = 'API Offline'; }
+}
+
+/* ── Metadata ── */
+async function loadModelMetadata() {
+  try {
+    const d = await fetch(API+'/model-metadata').then(r=>r.json());
+    if (d.error) return;
+    _meta = d;
+    document.getElementById('kpiDataset').textContent = d.dataset_size.toLocaleString();
+    const acc = d.benchmarks[d.model_name].accuracy;
+    document.getElementById('kpiAccuracy').textContent = acc+'%';
+    setTimeout(() => { document.getElementById('kpiAccBar').style.width = acc+'%'; }, 300);
+  } catch { console.warn('Metadata unavailable'); }
+}
+
+/* ── Scanner ── */
+function quickScan(url) { document.getElementById('urlInput').value=url; scanURL(); switchTab('scan'); }
+
+async function scanURL() {
+  const url = document.getElementById('urlInput').value.trim();
+  if (!url) return;
+  document.getElementById('scanEmpty').classList.add('hidden');
+  document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scanLoading').classList.remove('hidden');
+  document.getElementById('scanBtn').disabled = true;
+  try {
+    const d = await fetch(API+'/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({url})}).then(r=>r.json());
+    renderResult(d); sessionScans++; sessionLatencies.push(d.latency_ms);
+    updateKPIs(); refreshHistory(); updateTicker();
+    toast(d.label===1?'Phishing URL detected — HIGH RISK':'URL appears legitimate — SAFE', d.label===1?'danger':'success');
+  } catch(e) { toast('Analysis failed: '+e.message,'danger'); }
+  finally { document.getElementById('scanLoading').classList.add('hidden'); document.getElementById('scanBtn').disabled=false; }
+}
+
+function renderResult(d) {
+  document.getElementById('scanResult').classList.remove('hidden');
+  document.getElementById('scanResult').classList.add('fade-up');
+  const COLS = { HIGH:'#E5484D', MEDIUM:'#f97316', LOW:'#F59E0B', SAFE:'#00A896' };
+  const pct  = d.phishing_probability;
+  const fill = document.getElementById('gaugeFill');
+  fill.style.stroke = COLS[d.risk_level]||'#00A896';
+  setTimeout(() => { fill.style.strokeDashoffset = 270 - (pct/100)*270; }, 80);
+  document.getElementById('riskPct').textContent = pct+'%';
+  document.getElementById('riskLbl').textContent  = d.risk_level;
+  document.getElementById('riskLbl').style.color  = COLS[d.risk_level];
+  const BM = {HIGH:['badge-high','fa-triangle-exclamation','High Risk'],MEDIUM:['badge-medium','fa-circle-exclamation','Suspicious'],LOW:['badge-low','fa-circle-info','Low Risk'],SAFE:['badge-safe','fa-shield','Safe']};
+  const [cls,icon,lbl] = BM[d.risk_level]||BM.SAFE;
+  const b = document.getElementById('riskBadge');
+  b.className = 'badge '+cls; b.innerHTML = `<i class="fa-solid ${icon}" style="font-size:10px"></i> ${lbl}`;
+  document.getElementById('resultUrl').textContent  = d.url;
+  document.getElementById('resultConf').textContent = d.confidence+'%';
+  document.getElementById('resultLat').textContent  = d.latency_ms+' ms';
+  const rc = document.getElementById('resultClass');
+  rc.textContent = d.label===1?'⚠ Phishing Detected':'✓ Legitimate URL';
+  rc.style.color = d.label===1?'#f87171':'#34d399';
+  renderFeatureBreakdown(d.features);
+}
+
+function updateKPIs() {
+  document.getElementById('kpiScanned').textContent = sessionScans;
+  if (sessionLatencies.length) {
+    const avg = (sessionLatencies.reduce((a,b)=>a+b,0)/sessionLatencies.length).toFixed(1);
+    document.getElementById('kpiLatency').textContent = avg;
+  }
+}
+
+/* ── Feature Breakdown ── */
+const SIGNALS = [
+  {k:'has_suspicious_keywords',   label:'Suspicious Keywords',          binary:true},
+  {k:'is_suspicious_tld',         label:'Suspicious TLD (.tk, .ml…)',   binary:true},
+  {k:'has_ip_address',            label:'IP Address in Hostname',       binary:true},
+  {k:'is_shortening_service',     label:'URL Shortener',                binary:true},
+  {k:'has_at_symbol',             label:'@ Symbol Present',             binary:true},
+  {k:'has_double_slash_redirect', label:'Double-Slash Redirect',        binary:true},
+  {k:'has_hex_encoding',          label:'Hex-Encoded Characters',       binary:true},
+  {k:'has_https',                 label:'HTTPS Enabled',                binary:true, good:true},
+  {k:'shannon_entropy',           label:'Shannon Entropy',              max:6},
+  {k:'subdomain_count',           label:'Subdomain Depth',              max:8},
+  {k:'url_length',                label:'URL Length',                   max:150},
+  {k:'digit_ratio',               label:'Digit Ratio',                  pct:true},
+  {k:'num_dots',                  label:'Dot Count',                    max:15},
+  {k:'num_hyphens',               label:'Hyphen Count',                 max:20},
+];
+
+function renderFeatureBreakdown(features) {
+  document.getElementById('featureBreakdown').innerHTML = SIGNALS.map(s => {
+    const v = features[s.k];
+    let fill, val, barPct;
+    if (s.binary) {
+      const risk = s.good ? v===0 : v===1;
+      fill='#E5484D'; if(!risk) fill='#00A896'; val=v===1?'YES':'NO'; barPct=v===1?100:10;
+    } else if (s.pct) { fill='#1769E0'; val=(v*100).toFixed(1)+'%'; barPct=Math.min(100,v*100); }
+    else { const r=Math.min(1,parseFloat(v)/(s.max||100)); fill=r>0.65?'#F59E0B':'#1769E0'; val=typeof v==='number'?v.toFixed(2):v; barPct=r*100; }
+    return `<div><div style="display:flex;justify-content:space-between;margin-bottom:3px">
+      <span style="font-size:11px;color:var(--text-muted)">${s.label}</span>
+      <span class="mono" style="font-size:11px;font-weight:700;color:var(--text)">${val}</span>
+      </div><div class="feat-bar"><div class="feat-bar-fill" style="width:${barPct.toFixed(0)}%;background:${fill}"></div></div></div>`;
+  }).join('');
+}
+
+/* ── Feature Compare ── */
+async function compareFeatures() {
+  const u1=document.getElementById('compareLegit').value.trim(), u2=document.getElementById('comparePhish').value.trim();
+  if (!u1||!u2) return;
+  try {
+    const [f1,f2] = await Promise.all([
+      fetch(API+'/features?url='+encodeURIComponent(u1)).then(r=>r.json()),
+      fetch(API+'/features?url='+encodeURIComponent(u2)).then(r=>r.json()),
+    ]);
+    const keys=['url_length','num_dots','num_hyphens','num_digits','digit_ratio','subdomain_count','shannon_entropy','hostname_length','tld_length','path_length'];
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    const gc=dark?'rgba(34,199,214,.05)':'rgba(0,0,0,.05)', tc=dark?'#4A6580':'#475569';
+    if (featCompChart) featCompChart.destroy();
+    featCompChart=new Chart(document.getElementById('featureCompareChart').getContext('2d'),{type:'bar',data:{labels:keys.map(k=>k.replace(/_/g,' ')),datasets:[
+      {label:'Legitimate',data:keys.map(k=>f1.features[k]*(k==='digit_ratio'?100:1)),backgroundColor:'rgba(0,168,150,.72)',borderRadius:4},
+      {label:'Phishing',  data:keys.map(k=>f2.features[k]*(k==='digit_ratio'?100:1)),backgroundColor:'rgba(229,72,77,.72)',  borderRadius:4},
+    ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:tc,font:{size:11}}},tooltip:{backgroundColor:dark?'#112240':'#fff',borderColor:'rgba(23,105,224,.3)',borderWidth:1}},scales:{x:{ticks:{color:tc,font:{size:10}},grid:{color:gc}},y:{ticks:{color:tc},grid:{color:gc}}}}});
+  } catch(e){toast('Compare failed','danger');}
+}
+
+/* ── Model Benchmarks ── */
+function loadModelBenchmarks() {
+  if (!_meta) return setTimeout(loadModelBenchmarks,500);
+  const d=_meta, dark=document.documentElement.getAttribute('data-theme')==='dark';
+  const gc=dark?'rgba(34,199,214,.05)':'rgba(0,0,0,.05)', tc=dark?'#4A6580':'#475569';
+  const PAL={DecisionTree:'rgba(34,199,214,.75)',RandomForest:'rgba(0,168,150,.75)',GradientBoosting:'rgba(245,158,11,.75)',XGBoost:'rgba(23,105,224,.75)'};
+  const metrics=['accuracy','precision','recall','cv_f1_mean'];
+  const datasets=Object.keys(d.benchmarks).map(m=>({label:m,data:metrics.map(k=>d.benchmarks[m][k]),backgroundColor:PAL[m]||'rgba(23,105,224,.7)',borderRadius:5}));
+  if (modelChart) modelChart.destroy();
+  modelChart=new Chart(document.getElementById('modelBenchChart').getContext('2d'),{type:'bar',data:{labels:['Accuracy','Precision','Recall','CV F1 (5-fold)'],datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}}},tooltip:{backgroundColor:dark?'#112240':'#fff',borderColor:'rgba(23,105,224,.3)',borderWidth:1,callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y}%`}}},scales:{y:{min:85,max:100,ticks:{color:tc,callback:v=>v+'%'},grid:{color:gc}},x:{ticks:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12}},grid:{color:gc}}}}});
+  const best=d.benchmarks[d.model_name];
+  document.getElementById('bestModelName').textContent=d.model_name;
+  document.getElementById('bmAcc').textContent=best.accuracy+'%';
+  document.getElementById('bmF1').textContent=best.cv_f1_mean+'%';
+  document.getElementById('bmPrec').textContent=best.precision+'%';
+  document.getElementById('bmRec').textContent=best.recall+'%';
+  const cm=d.confusion_matrix, [tn,fp,fn,tp]=[cm[0][0],cm[0][1],cm[1][0],cm[1][1]];
+  document.getElementById('cmTN').textContent=tn;  document.getElementById('cmFP').textContent=fp;
+  document.getElementById('cmFN').textContent=fn;  document.getElementById('cmTP').textContent=tp;
+  document.getElementById('cmTPR').textContent=((tp/(tp+fn))*100).toFixed(1)+'%';
+  document.getElementById('cmFPR').textContent=((fp/(fp+tn))*100).toFixed(1)+'%';
+}
+
+/* ── Batch ── */
+function loadBatchSamples(){document.getElementById('batchInput').value=['https://www.google.com','https://github.com/scikit-learn/scikit-learn','https://www.gecajmer.ac.in','https://www.microsoft.com/en-in','https://docs.python.org/3/library/urllib.parse.html','http://secure-login-8847.verify-account.tk/signin?user=admin','https://www-paypa1-9921.secure-update.ml/login','http://192.168.45.12/paypal/verify/update','https://netflix-billing-4421.account-suspend.work/update-payment','http://banking-hdfc-7731.update-now.cf/secure/login'].join('\n');}
+async function runBatchScan(){
+  const urls=document.getElementById('batchInput').value.trim().split('\n').map(s=>s.trim()).filter(Boolean).slice(0,50);
+  if(!urls.length)return;
+  const box=document.getElementById('batchResults');
+  box.innerHTML=`<div style="padding:40px 0;text-align:center"><div class="spinner" style="width:28px;height:28px;border-radius:50%;border:2px solid rgba(23,105,224,.2);border-top-color:var(--blue);margin:0 auto 10px"></div><div style="font-size:12px;color:var(--text-muted)">Scanning ${urls.length} URLs…</div><div class="loader-bar" style="width:160px;margin:8px auto 0;border-radius:2px"></div></div>`;
+  try{const d=await fetch(API+'/predict/batch',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({urls})}).then(r=>r.json());renderBatch(d);sessionScans+=d.count;updateKPIs();refreshHistory();}
+  catch(e){box.innerHTML=`<div style="padding:16px;font-size:12px;color:var(--red)">Error: ${e.message}</div>`;}
+}
+function renderBatch(d){
+  const box=document.getElementById('batchResults');
+  document.getElementById('batchStats').classList.remove('hidden');
+  document.getElementById('batchCount').textContent=d.count+' URLs';
+  document.getElementById('batchAvgLat').textContent='Avg '+d.avg_latency_ms+' ms';
+  const RC={HIGH:'badge-high',MEDIUM:'badge-medium',LOW:'badge-low',SAFE:'badge-safe'};
+  const rows=d.results.map((r,i)=>{if(r.error)return`<tr><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${i+1}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;color:var(--text-muted)">${r.url}</td><td colspan="3" style="padding:10px 12px;font-size:12px;color:var(--red)">Error</td></tr>`;const col=r.label?'#f87171':'#34d399';return`<tr style="border-top:1px solid var(--border-subtle)"><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${i+1}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;color:${col}">${r.url}</td><td style="padding:10px 12px"><span class="badge ${RC[r.risk_level]||'badge-safe'}">${r.risk_level}</span></td><td class="mono" style="padding:10px 12px;font-size:12px;font-weight:700;color:${col}">${r.phishing_probability}%</td><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${r.latency_ms}ms</td></tr>`;}).join('');
+  box.innerHTML=`<table style="width:100%;text-align:left"><thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)"><th style="padding:8px 12px">#</th><th style="padding:8px 12px">URL</th><th style="padding:8px 12px">Risk</th><th style="padding:8px 12px">Score</th><th style="padding:8px 12px">Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+/* ── Dataset ── */
+async function loadDatasetExplorer(){
+  try{const d=await fetch(API+'/dataset/stats').then(r=>r.json());
+    document.getElementById('dsLegit').textContent=d.legitimate.toLocaleString();
+    document.getElementById('dsPhish').textContent=d.phishing.toLocaleString();
+    document.getElementById('dsTotal').textContent=d.total.toLocaleString();
+    document.getElementById('dsAvgLegit').textContent=d.avg_url_length.legitimate+' chars';
+    document.getElementById('dsAvgPhish').textContent=d.avg_url_length.phishing+' chars';
+    document.getElementById('dsTldLegit').textContent=d.suspicious_tld_count.legitimate;
+    document.getElementById('dsTldPhish').textContent=d.suspicious_tld_count.phishing;
+    document.getElementById('dsIpLegit').textContent=d.ip_based_urls.legitimate;
+    document.getElementById('dsIpPhish').textContent=d.ip_based_urls.phishing;
+    if(dsChart)dsChart.destroy();
+    const dark=document.documentElement.getAttribute('data-theme')==='dark';
+    dsChart=new Chart(document.getElementById('datasetChart').getContext('2d'),{type:'doughnut',data:{labels:['Legitimate','Phishing'],datasets:[{data:[d.legitimate,d.phishing],backgroundColor:['rgba(0,168,150,.78)','rgba(229,72,77,.78)'],borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{labels:{color:dark?'#8AA4C2':'#2D4A6A',font:{size:12},padding:20}},tooltip:{backgroundColor:dark?'#112240':'#fff',borderColor:'rgba(23,105,224,.3)',borderWidth:1}}}});
+  }catch{}
+  loadDatasetPreview('all');
+}
+async function loadDatasetPreview(filter){
+  ['dsFilterAll','dsFilterLegit','dsFilterPhish'].forEach(id=>document.getElementById(id).classList.remove('active'));
+  document.getElementById(filter==='all'?'dsFilterAll':filter==='0'?'dsFilterLegit':'dsFilterPhish').classList.add('active');
+  const url=filter==='all'?API+'/dataset/preview?limit=30':API+'/dataset/preview?limit=30&label='+filter;
+  try{const d=await fetch(url).then(r=>r.json());
+    const rows=d.rows.map(row=>{const col=row.label===1?'#f87171':'#34d399',badge=row.label===1?'badge-high':'badge-safe';return`<tr class="ds-row" style="border-top:1px solid var(--border-subtle)"><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;max-width:320px;color:${col}">${row.url}</td><td style="padding:10px 12px"><span class="badge ${badge}">${row.label_text}</span></td><td class="mono" style="padding:10px 12px;font-size:11px;text-align:center;color:var(--text-muted)">${row.url_length}</td><td class="mono" style="padding:10px 12px;font-size:11px;text-align:center;color:var(--text-muted)">${row.shannon_entropy}</td><td style="padding:10px 12px;text-align:center">${row.has_ip_address?'<span class="badge badge-high">YES</span>':'<span style="color:var(--text-muted)">—</span>'}</td></tr>`;}).join('');
+    document.getElementById('datasetTable').innerHTML=`<table style="width:100%;text-align:left;min-width:600px"><thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)"><th style="padding:8px 12px">URL</th><th style="padding:8px 12px">Label</th><th style="padding:8px 12px;text-align:center">Length</th><th style="padding:8px 12px;text-align:center">Entropy</th><th style="padding:8px 12px;text-align:center">IP</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }catch{}
+}
+
+/* ── History ── */
+async function refreshHistory(){
+  try{const d=await fetch(API+'/logs?limit=50').then(r=>r.json());
+    const box=document.getElementById('historyTable');
+    if(!d.count){box.innerHTML=`<div style="padding:48px 0;text-align:center"><i class="fa-solid fa-clock" style="font-size:28px;color:var(--text-muted);display:block;margin-bottom:8px"></i><div style="font-size:12px;color:var(--text-muted)">No scans yet.</div></div>`;return;}
+    const RC={HIGH:'badge-high',MEDIUM:'badge-medium',LOW:'badge-low',SAFE:'badge-safe'};
+    const rows=d.logs.map(l=>{const col=l.label?'#f87171':'#34d399',time=new Date(l.timestamp).toLocaleTimeString();return`<tr style="border-top:1px solid var(--border-subtle)"><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${time}</td><td class="mono" style="padding:10px 12px;font-size:11px;word-break:break-all;max-width:320px;color:${col}">${l.url}</td><td style="padding:10px 12px"><span class="badge ${RC[l.risk_level]||'badge-safe'}">${l.risk_level}</span></td><td class="mono" style="padding:10px 12px;font-size:12px;font-weight:700;color:${col}">${l.phishing_probability}%</td><td class="mono" style="padding:10px 12px;font-size:12px;color:var(--text-muted)">${l.latency_ms}ms</td></tr>`;}).join('');
+    box.innerHTML=`<table style="width:100%;text-align:left;min-width:600px"><thead><tr style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)"><th style="padding:8px 12px">Time</th><th style="padding:8px 12px">URL</th><th style="padding:8px 12px">Risk</th><th style="padding:8px 12px">Score</th><th style="padding:8px 12px">Latency</th></tr></thead><tbody>${rows}</tbody></table>`;
+  }catch{}
+}
+
+/* ── Ticker ── */
+async function updateTicker(){
+  try{const d=await fetch(API+'/logs?limit=20').then(r=>r.json());
+    if(!d.logs||!d.logs.length)return;
+    const items=[...d.logs,...d.logs].map(l=>{const col=l.label?'#f87171':'#34d399',icon=l.label?'⚠':'✓',short=l.url.length>55?l.url.slice(0,55)+'…':l.url;return`<span style="color:${col}">${icon} ${short}</span>`;});
+    document.getElementById('tickerInner').innerHTML=items.join('<span style="color:var(--text-muted);margin:0 12px">·</span>');
+  }catch{}
+}
+</script>
+</body>
+</html>
