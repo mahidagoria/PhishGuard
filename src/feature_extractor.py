@@ -1,6 +1,6 @@
 """
 Offline feature extraction module for URL-based phishing detection.
-Extracts 20 lexical, structural, and entropy metrics from URL strings.
+Extracts 22 lexical, structural, and entropy metrics from URL strings.
 """
 
 from __future__ import annotations

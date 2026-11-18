@@ -1,0 +1,29 @@
+{
+  "dataset_name": "PhiUSIIL Phishing URL Dataset",
+  "source_file": "PhiUSIIL_Phishing_URL_Dataset.csv",
+  "source_rows": 235795,
+  "output_rows": 200000,
+  "project_label_mapping": {
+    "0": "legitimate",
+    "1": "phishing"
+  },
+  "source_label_mapping": {
+    "0": "phishing",
+    "1": "legitimate"
+  },
+  "rows_removed": {
+    "invalid_url_or_label": 0,
+    "conflicting_url_labels": 0,
+    "duplicate_urls": 425
+  },
+  "samples_per_class": 100000,
+  "random_state": 42,
+  "preprocessing": [
+    "Trim URL whitespace",
+    "Remove missing, blank, and non-binary labeled rows",
+    "Remove URLs with conflicting labels",
+    "Deduplicate exact URLs",
+    "Invert the PhiUSIIL label convention to project labels",
+    "Deterministically sample equal class counts"
+  ]
+}

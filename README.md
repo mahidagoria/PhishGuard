@@ -9,9 +9,9 @@
 
 A lightweight phishing URL detection engine that classifies URL structure and checks whether the hostname resolves via the system DNS resolver. It does not request or open the submitted site.
 
-The system extracts 22 structural, lexical, and entropy signals from a URL and runs them through a constrained Decision Tree classifier. Model inference is typically under 10 milliseconds; total response time also depends on the system DNS resolver.
+The system extracts 22 structural, lexical, and entropy signals from a URL and benchmarks Decision Tree, Random Forest, and Gradient Boosting classifiers. The selected model's measured grouped-holdout accuracy is 99.52%. Prediction latency includes the local system DNS lookup and can vary with resolver behavior.
 
-The dashboard displays measured test-set accuracy (83.18% for the currently saved model), not a hard-coded target. After duplicate and conflicting URLs are removed, the current training run uses 1,069 unique URLs. Low-risk URLs with resolvable hostnames are marked safe; unresolved low-risk domains are undefined, while strong phishing indicators are still flagged.
+The included training corpus contains 200,000 balanced URLs prepared from a local PhiUSIIL dataset export. Dataset source, label mapping, and cleaning counts are recorded with the data. This corpus does not claim separate PhishTank or OpenPhish feed ingestion. Low-risk URLs with resolvable hostnames are marked safe; unresolved low-risk domains are undefined, while strong phishing indicators are still flagged.
 
 ## Quick Start
 
@@ -27,8 +27,9 @@ source venv/bin/activate        # macOS/Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Generate training dataset
-python3 scripts/generate_dataset.py
+# Optional: regenerate the included balanced dataset from the source CSV
+python3 -m scripts.prepare_dataset \
+  --source "/path/to/PhiUSIIL_Phishing_URL_Dataset.csv"
 
 # Train ML models
 python3 -m src.train_model
@@ -38,6 +39,16 @@ python3 src/api/app.py
 ```
 
 Open `http://127.0.0.1:5000/dashboard` in your browser.
+
+The prepared dataset is included at `data/url_dataset.csv`, so the preparation step is only needed when rebuilding it from the source CSV.
+
+Run API and dataset tests with:
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+After starting the API, run the presentation smoke test with `python3 scripts/demo.py`.
 
 ## API Endpoints
 
@@ -88,20 +99,23 @@ curl -X POST http://127.0.0.1:5000/predict \
 
 ## Model Performance
 
-The source dataset contains 2,000 generated URLs with hard edge-cases. The training pipeline removes duplicates and conflicting labels before evaluation.
+Trained on 200,000 balanced URLs (100,000 legitimate and 100,000 phishing) prepared from the locally supplied PhiUSIIL dataset. Evaluation holds out entire hostnames so URLs from one host do not occur in both train and test partitions.
 
 | Classifier | Accuracy | Precision | Recall | F1 Score |
 |---|---|---|---|---|
-| **Decision Tree (depth 2)** | **83.18%** | **97.74%** | **79.75%** | **87.84%** |
+| Decision Tree | 99.46% | 99.95% | 98.96% | 99.45% |
+| Random Forest | 99.52% | 99.92% | 99.11% | 99.51% |
+| **Gradient Boosting** | **99.52%** | **99.88%** | **99.15%** | **99.51%** |
 
-Measured on the current stratified holdout split; results can vary with the dataset.
+The selected model achieved 99.15% phishing recall and a 0.12% false-positive rate on 39,412 held-out URLs from 36,969 hostnames. Metrics describe this dataset and split and are not a guarantee of future performance. Some path-heavy benign URLs are false positives; see [the Semester VII report](docs/semester_vii_report.md) for limitations and methodology.
 
 ## Project Structure
 
 ```
 phishing-detection-engine/
 ├── data/
-│   └── url_dataset.csv          # Training dataset (2,000 URLs)
+│   ├── url_dataset.csv          # Clean balanced training data (200,000 URLs)
+│   └── dataset_metadata.json    # Source, mapping, and cleaning record
 ├── models/
 │   ├── phishing_model.joblib    # Trained model artifact
 │   └── model_metadata.json      # Benchmark results
@@ -115,9 +129,13 @@ phishing-detection-engine/
 │           └── index.html       # Web dashboard
 ├── scripts/
 │   ├── generate_dataset.py      # Dataset generator
+│   ├── prepare_dataset.py       # Clean/balance a PhiUSIIL source CSV
 │   └── demo.py                  # CLI demo script
+├── tests/
+│   ├── test_api.py
+│   └── test_dataset_pipeline.py
 ├── docs/
-│   └── DEMO1_PRESENTATION.md    # Demo presentation guide
+│   └── semester_vii_report.md   # Project-I scope, methods, results, limitations
 └── requirements.txt
 ```
 
@@ -130,4 +148,4 @@ phishing-detection-engine/
 
 ---
 
-*100% local · Zero cloud cost · Privacy-preserving*
+*Local model inference · No submitted webpage is opened*

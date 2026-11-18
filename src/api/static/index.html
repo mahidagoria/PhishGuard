@@ -1203,7 +1203,7 @@ function loadModelBenchmarks() {
 }
 
 /* ── Batch ── */
-function loadBatchSamples(){document.getElementById('batchInput').value=['https://www.google.com','https://github.com/scikit-learn/scikit-learn','https://docs.python.org/3/','https://www.microsoft.com/en-in','https://docs.python.org/3/library/urllib.parse.html','http://secure-login-8847.verify-account.tk/signin?user=admin','https://www-paypa1-9921.secure-update.ml/login','http://192.168.45.12/paypal/verify/update','https://netflix-billing-4421.account-suspend.work/update-payment','http://banking-hdfc-7731.update-now.cf/secure/login'].join('\n');}
+function loadBatchSamples(){document.getElementById('batchInput').value=['https://www.google.com','https://www.github.com','https://www.microsoft.com','https://www.python.org','https://www.bing.com','http://secure-login-8847.verify-account.tk/signin?user=admin','https://www-paypa1-9921.secure-update.ml/login','http://192.168.45.12/paypal/verify/update','https://netflix-billing-4421.account-suspend.work/update-payment','http://banking-hdfc-7731.update-now.cf/secure/login'].join('\n');}
 async function runBatchScan(){
   const urls=document.getElementById('batchInput').value.trim().split('\n').map(s=>s.trim()).filter(Boolean).slice(0,50);
   if(!urls.length)return;

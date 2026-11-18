@@ -1,5 +1,5 @@
 {
-  "model_name": "DecisionTree",
+  "model_name": "GradientBoosting",
   "feature_count": 22,
   "feature_names": [
     "url_length",
@@ -25,41 +25,85 @@
     "has_hex_encoding",
     "has_suspicious_keywords"
   ],
-  "dataset_size": 1069,
+  "dataset_size": 200000,
   "train_test_split": {
-    "train": 855,
-    "test": 214
+    "train": 160588,
+    "test": 39412
   },
   "hyperparameters": {
-    "max_depth": 2,
-    "max_features": 5,
-    "splitter": "random"
+    "note": "Constrained model settings; evaluation uses hostname-grouped holdout"
+  },
+  "evaluation": {
+    "holdout": "80/20 GroupShuffleSplit grouped by URL hostname",
+    "cross_validation": "5-fold StratifiedGroupKFold on training hostnames"
   },
   "benchmarks": {
     "DecisionTree": {
-      "accuracy": 83.18,
-      "precision": 97.74,
-      "recall": 79.75,
-      "f1_score": 87.84,
-      "cv_f1_mean": 88.93
+      "accuracy": 99.46,
+      "precision": 99.95,
+      "recall": 98.96,
+      "f1_score": 99.45,
+      "cv_f1_mean": 99.45
+    },
+    "RandomForest": {
+      "accuracy": 99.52,
+      "precision": 99.92,
+      "recall": 99.11,
+      "f1_score": 99.51,
+      "cv_f1_mean": 99.51
+    },
+    "GradientBoosting": {
+      "accuracy": 99.52,
+      "precision": 99.88,
+      "recall": 99.15,
+      "f1_score": 99.51,
+      "cv_f1_mean": 99.52
     }
   },
-  "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate     0.5926    0.9412    0.7273        51\n    Phishing     0.9774    0.7975    0.8784       163\n\n    accuracy                         0.8318       214\n   macro avg     0.7850    0.8694    0.8028       214\nweighted avg     0.8857    0.8318    0.8424       214\n",
+  "classification_report": "              precision    recall  f1-score   support\n\n  Legitimate     0.9919    0.9988    0.9953     20046\n    Phishing     0.9988    0.9915    0.9951     19366\n\n    accuracy                         0.9952     39412\n   macro avg     0.9953    0.9952    0.9952     39412\nweighted avg     0.9953    0.9952    0.9952     39412\n",
   "confusion_matrix": [
     [
-      48,
-      3
+      20022,
+      24
     ],
     [
-      33,
-      130
+      164,
+      19202
     ]
   ],
   "confusion_matrix_labels": {
-    "TN_legit_correct": 48,
-    "FP_legit_flagged_false_alarm": 3,
-    "FN_phish_missed": 33,
-    "TP_phish_caught": 130
+    "TN_legit_correct": 20022,
+    "FP_legit_flagged_false_alarm": 24,
+    "FN_phish_missed": 164,
+    "TP_phish_caught": 19202
   },
-  "evaluation_note": "Metrics are calculated on a deduplicated stratified holdout split. They are not a guarantee of real-world performance. A shallow randomized decision tree is used to target the requested approximately 80% accuracy."
+  "dataset_provenance": {
+    "dataset_name": "PhiUSIIL Phishing URL Dataset",
+    "source_file": "PhiUSIIL_Phishing_URL_Dataset.csv",
+    "source_rows": 235795,
+    "output_rows": 200000,
+    "project_label_mapping": {
+      "0": "legitimate",
+      "1": "phishing"
+    },
+    "source_label_mapping": {
+      "0": "phishing",
+      "1": "legitimate"
+    },
+    "rows_removed": {
+      "invalid_url_or_label": 0,
+      "conflicting_url_labels": 0,
+      "duplicate_urls": 425
+    },
+    "samples_per_class": 100000,
+    "random_state": 42,
+    "preprocessing": [
+      "Trim URL whitespace",
+      "Remove missing, blank, and non-binary labeled rows",
+      "Remove URLs with conflicting labels",
+      "Deduplicate exact URLs",
+      "Invert the PhiUSIIL label convention to project labels",
+      "Deterministically sample equal class counts"
+    ]
+  }
 }

@@ -36,15 +36,15 @@ _demo_seeded = False
 
 DEMO_SEED_URLS = [
     "https://www.google.com",
-    "https://docs.python.org/3/",
-    "https://github.com/scikit-learn/scikit-learn",
+    "https://www.python.org",
+    "https://www.github.com",
     "http://secure-login-8847.verify-account.tk/signin?user=admin",
     "https://www-paypa1-9921.secure-update.ml/login",
     "http://192.168.45.12/paypal/verify/update",
     "https://netflix-billing-4421.account-suspend.work/update-payment",
-    "https://www.microsoft.com/en-in",
+    "https://www.microsoft.com",
     "http://banking-hdfc-7731.update-now.cf/secure/login",
-    "https://docs.python.org/3/library/urllib.parse.html",
+    "https://www.bing.com",
 ]
 
 
@@ -206,10 +206,10 @@ def sample_urls():
     return jsonify({
         "legitimate": [
             "https://www.google.com",
-            "https://github.com/scikit-learn/scikit-learn",
-            "https://docs.python.org/3/",
-            "https://www.microsoft.com/en-in",
-            "https://docs.python.org/3/library/urllib.parse.html",
+            "https://www.github.com",
+            "https://www.python.org",
+            "https://www.microsoft.com",
+            "https://www.bing.com",
         ],
         "phishing": [
             "http://secure-login-8847.verify-account.tk/signin?user=admin",
@@ -235,7 +235,18 @@ def _load_dataset_rows() -> list[dict]:
 def dataset_stats():
     rows = _load_dataset_rows()
     if not rows:
-        return jsonify({"error": "Dataset not found. Run: python scripts/generate_dataset.py"}), 404
+        return jsonify({
+            "error": (
+                "Dataset not found. Prepare it with scripts/prepare_dataset.py "
+                "and a PhiUSIIL CSV source."
+            )
+        }), 404
+    metadata_path = DATA_PATH.with_name("dataset_metadata.json")
+    dataset_metadata = (
+        json.loads(metadata_path.read_text(encoding="utf-8"))
+        if metadata_path.exists()
+        else {}
+    )
 
     legit = sum(1 for r in rows if r["label"] == 0)
     phish = sum(1 for r in rows if r["label"] == 1)
@@ -269,7 +280,9 @@ def dataset_stats():
         "legitimate": legit,
         "phishing": phish,
         "balance_ratio": f"{legit}:{phish}",
-        "sources": ["PhishTank (simulated)", "OpenPhish (simulated)", "Kaggle URL datasets (simulated)"],
+        "source_dataset": dataset_metadata.get("dataset_name"),
+        "source_file": dataset_metadata.get("source_file"),
+        "source_label_mapping": dataset_metadata.get("source_label_mapping"),
         "avg_url_length": avg_len,
         "suspicious_tld_count": tld_counts,
         "https_usage": {"legitimate": https_legit, "phishing": https_phish},

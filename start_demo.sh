@@ -24,7 +24,7 @@ PY=python3
 
 # Step 2 — Dependencies
 echo "[2/4] Installing dependencies..."
-python3 -m pip install -r requirements.txt ss
+python3 -m pip install -r requirements.txt
 
 # Step 3 — Dataset + model
 if [ ! -f "data/url_dataset.csv" ] || [ ! -f "models/phishing_model.joblib" ]; then

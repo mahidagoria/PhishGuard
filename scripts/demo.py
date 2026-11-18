@@ -12,12 +12,12 @@ except ImportError:
     sys.exit(1)
 
 import os
-BASE = os.environ.get("API_BASE", "http://127.0.0.1:5001")
+BASE = os.environ.get("API_BASE", "http://127.0.0.1:5000")
 
 TEST_URLS = [
     ("https://www.google.com", "Legitimate"),
-    ("https://github.com/scikit-learn/scikit-learn", "Legitimate"),
-    ("https://docs.python.org/3/", "Legitimate"),
+    ("https://www.github.com", "Legitimate"),
+    ("https://www.microsoft.com", "Legitimate"),
     ("http://secure-login-8847.verify-account.tk/signin?user=admin", "Phishing"),
     ("https://www-paypa1-9921.secure-update.ml/login", "Phishing"),
     ("http://192.168.45.12/paypal/verify/update", "Phishing"),
@@ -32,6 +32,7 @@ def section(title: str) -> None:
 
 
 def main() -> None:
+    all_passed = True
     section("1. Health Check")
     r = requests.get(f"{BASE}/health", timeout=5)
     print(json.dumps(r.json(), indent=2))
@@ -52,6 +53,7 @@ def main() -> None:
             (expected == "Phishing" and d.get("label") == 1)
             or (expected == "Legitimate" and d.get("label") == 0)
         ) else "✗"
+        all_passed = all_passed and status == "✓"
         print(f"{status} [{d.get('risk_level', '?'):6s}] {d.get('latency_ms', 0):6.2f}ms | "
               f"{d.get('phishing_probability', 0):5.1f}% phishing | {url[:55]}")
 
@@ -70,7 +72,10 @@ def main() -> None:
     print(json.dumps(r.json(), indent=2))
 
     print(f"\n{'=' * 60}")
-    print("  Demo complete — ready for presentation!")
+    if not all_passed:
+        print("  Demo failed — one or more sample URLs were misclassified.")
+        sys.exit(1)
+    print("  Demo complete — all sample URLs matched their expected labels.")
     print("=" * 60 + "\n")
 
 
